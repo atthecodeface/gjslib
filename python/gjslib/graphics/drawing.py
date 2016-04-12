@@ -102,6 +102,15 @@ class point(object):
 
 #c line
 class line(object):
+    """
+    A simple line class of 2 dimensions for drawing in a draw buffer
+
+    This should be a separate class or a mixin for a basic line class
+    The line is stored with its first end at lowest Y, lowest X if horizontal
+
+    Maybe this should be a line segment?
+    """
+    #f __init__
     def __init__(self,x0,y0,x1,y1,resolution_bits=None):
         if y1<y0: (x0,y0,x1,y1) = (x1,y1,x0,y0)
         if y1==y0 and x1<x0: (x0,y0,x1,y1) = (x1,y1,x0,y0)
@@ -111,11 +120,21 @@ class line(object):
         self.dy = y1-y0
         self.res = resolution_bits
         self.is_steep = (self.dy>abs(self.dx))
+        self.is_degenerate = (self.dy==0) and (self.dx==0)
         pass
+    #f __getitem__
+    def __getitem__(self,key):
+        return (self.p0,self.p1)[key]
+    #f __setitem__
+    def __setitem__(self,key,value):
+        die
+        pass
+    #f floor
     def floor(self,v):
         if self.res is None:
             return math.floor(v)
         return (v>>self.res)<<self.res
+    #f __iter__
     def __iter__(self):
         self.x = self.floor(self.p0[0])
         self.y = self.floor(self.p0[1])
@@ -130,8 +149,8 @@ class line(object):
             self.xerr = self.xerr<<self.res
             self.yerr = self.yerr<<self.res
             pass
-        if self.dx<0: self.xplus=-self.xplus
-
+        if self.is_degenerate: self.xplus = 100
+        if self.dx<=0: self.xplus=-self.xplus
 
         # The error term is held at a fixed-point resolution of self.res+1
         # This means that self.xerr, self.yerr are for _half_ a pixel of dx, dy
@@ -146,10 +165,13 @@ class line(object):
             error=error>>(self.res-1)
             pass
         self.error = error
+
         return self
+    #f next
     def next(self):
         if self.is_steep: return self.next_steep()
         return self.next_shallow()
+    #f next_shallow
     def next_shallow(self):
         if self.dx>0:
             if self.x>self.p1[0]:
@@ -167,6 +189,7 @@ class line(object):
             self.y+=self.yplus
             pass
         return r
+    #f next_steep
     def next_steep(self):
         if self.y>self.p1[1]:
             raise StopIteration()
@@ -178,6 +201,8 @@ class line(object):
             self.x     += self.xplus
             pass
         return r
+    #f All done
+    pass
 
 #c path
 class path(object):
@@ -262,65 +287,12 @@ class draw_buffer(object):
     #f putpixel - set pixel value at (x,y)
     def putpixel(self,x,y,value=255):
         if (x<0) or (y<0) or (x>=self.size[0]) or (y>=self.size[1]): return
-        self.image.putpixel((x,y), value)
+        self.image.putpixel((int(x),int(y)), value)
         return
-    #f draw_line - draw zero-width line
-    def draw_line(self,l,resolution_bits=16,value=255):
-        """
-        # Should we move to (px+1,py) or (px,py+1)?
-        # What is current error? it is x-(px<<resolution_bits), (y-py<<resolution_bits)
-        # Note that points all have x,y such that (x-x0)/(y-y0) = (x1-x0)/(y1-y0)
-        # Hence (x-x0).(y1-y0) = (x1-x0).(y-y0) ; dy.(x-x0) = dx.(y-y0)
-        # We keep track of error = dy.(x-x0) - dx.(y-y0)
-        # First, if dx is 0 then always move +1 in the Y
-        # If error<0 then we have to move +1 in the X
-        # If error>0 then we have to move +1 in the Y
-        # If error==0 then we have a choice - do X+1 if |dx|>|dy|
-        """
-        d = 1<<resolution_bits
-        l = _line( (int(l[0]*d),
-                     int(l[1]*d),
-                     int(l[2]*d),
-                     int(l[3]*d)) )
-        (x,y) = l.tl
-        (dx,dy) = (l.br[0] - l.tl[0], l.br[1] - l.tl[1])
-        px = x>>resolution_bits
-        py = y>>resolution_bits
-        # dy >=0; if dy==0, dx>=0
-        self.putpixel(px,py,value)
-        ex = (x-(px<<resolution_bits))
-        ey = (y-(py<<resolution_bits))
-        sdx = 1
-        if dx<0:
-            sdx = -1
-            pass
-        error = (ex*dy - ey*dx*sdx)>>resolution_bits
-        while True:
-            error_xp1 = error+dy
-            error_yp1 = error-dx*sdx
-            if (error_xp1<0): error_xp1=-error_xp1
-            if (error_yp1<0): error_yp1=-error_yp1
-            if (error_xp1<error_yp1):
-                error += dy
-                px += 1*sdx
-                pass
-            else:
-                error -= dx*sdx
-                py += 1
-                pass
-            self.putpixel(px,py,value)
-            if py > (l.br[1]>>resolution_bits):
-                break
-            if py == (l.br[1]>>resolution_bits):
-                if sdx*(px - (l.br[0]>>resolution_bits)) >= 0:
-                    break
-                pass
-            pass
-        pass
     #f draw_line - draw zero-width line
     def draw_line(self,l,value=255):
         for (px,py) in l:
-            self.putpixel(int(px),int(py),value)
+            self.putpixel(px,py,value)
             pass
         pass
     #f fill_paths
@@ -443,28 +415,3 @@ class draw_buffer(object):
         return r
     #f Done
     pass
-
-#a Toplevel
-if __name__=="__main__":
-    d = draw_buffer(mode="1",size=(80,80))
-    d.putpixel(16,16)
-    d.fill_paths( [((10,10), (70,10), (70,70), (10,70)),
-                   ((40,10), (10,40), (40,70), (70,40)),
-                   ],value=64 )
-    if True:
-        d.draw_line( (0,0,80,0), value=64 )
-        d.draw_line( (0,0,0,80), value=64 )
-        d.draw_line( (79,0,79,79), value=64 )
-        d.draw_line( (79,79,0,79), value=64 )
-        d.draw_line( (40,40,60,35) )
-        d.draw_line( (40,40,60,45) )
-        d.draw_line( (40,40,20,35) )
-        d.draw_line( (40,40,20,45) )
-        d.draw_line( (40,40,45,20) )
-        d.draw_line( (40,40,35,20) )
-        d.draw_line( (40,40,45,60) )
-        d.draw_line( (40,40,35,60) )
-        pass
-    print d
-
-

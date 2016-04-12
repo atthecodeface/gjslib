@@ -1,5 +1,8 @@
 import math
 
+def vector_squared(v):
+    return vector_dot_product(v,v)
+
 def vector_length(v):
     return math.sqrt(vector_dot_product(v,v))
 

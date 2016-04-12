@@ -83,13 +83,14 @@ class LineTests(unittest.TestCase):
     line_pts[1,1,5,1,0] = [(1, 1), (2,1), (3,1), (4,1), (5, 1)]
     line_pts[5,1,1,1,0] = [(1, 1), (2,1), (3,1), (4,1), (5, 1)]
     line_pts[5,1,1,5,0] = [(5, 1), (4,2), (3,3), (2,4), (1, 5)]
+    line_pts[5,5,5,5,0] = [(5, 5),]
     def check_points(self,d,value):
         self.assertEqual(len(value),len(d), 'Length of vectors differs %s'%(str(d)))
         for i in range(len(d)):
             self.assertEqual(value[i],d[i], 'Coordinate %d mismatches %s'%(i,str(d)))
         pass
     def check_lines(self,line_pts):
-        print
+        #print
         for l in line_pts:
             (x0,y0,x1,y1,r) = l
             ln = drawing.line(x0,y0,x1,y1,r)
@@ -97,10 +98,10 @@ class LineTests(unittest.TestCase):
             for p in ln:
                 lp.append(p)
                 pass
-            print l, lp, line_pts[l]
+            #print l, lp, line_pts[l]
             self.check_points(lp,line_pts[l])
             pass
-        print
+        #print
         pass
     def swap_xy_in_lines(self, line_pts):
         k = line_pts.keys()
@@ -116,6 +117,23 @@ class LineTests(unittest.TestCase):
             res[y0,x0,y1,x1,r] = np
             pass
         return res
+    def test_instance(self):
+        a = drawing.line(1,2,3,4)
+        self.assertEqual(a[0],(1,2),"Get of first point failed")
+        self.assertEqual(a[1],(3,4),"Get of second point failed")
+
+        a = drawing.line(3,4,1,2)
+        self.assertEqual(a[0],(1,2),"Get of first point failed")
+        self.assertEqual(a[1],(3,4),"Get of second point failed")
+
+        a = drawing.line(3,2,7,2)
+        self.assertEqual(a[0],(3,2),"Get of first point failed")
+        self.assertEqual(a[1],(7,2),"Get of second point failed")
+
+        a = drawing.line(7,2,3,2)
+        self.assertEqual(a[0],(3,2),"Get of first point failed")
+        self.assertEqual(a[1],(7,2),"Get of second point failed")
+        pass
     def test_bresenham_oct_shallow_xp(self):
         self.check_lines(self.line_pts)
         pass
