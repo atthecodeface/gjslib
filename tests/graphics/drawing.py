@@ -70,73 +70,6 @@ class PointTests(unittest.TestCase):
         self.check_point(m,(2,6,-3,4))
         pass
 #c LineTests
-class line(object):
-    def __init__(self,x0,y0,x1,y1,resolution_bits=16):
-        if y1<y0: (x0,y0,x1,y1) = (x1,y1,x0,y0)
-        if y1==y0 and x1<x0: (x0,y0,x1,y1) = (x1,y1,x0,y0)
-        self.p0 = (x0,y0)
-        self.p1 = (x1,y1)
-        self.dx = x1-x0
-        self.dy = y1-y0
-        self.res = resolution_bits
-        self.is_steep = (self.dy>abs(self.dx))
-        pass
-    def floor(self,v):
-        return (v>>self.res)<<self.res
-    def __iter__(self):
-        self.x = self.floor(self.p0[0])
-        self.y = self.floor(self.p0[1])
-
-        self.xplus = 1<<self.res
-        if self.dx<0: self.xplus=-self.xplus
-
-        self.xerr = self.dy<<self.res
-        self.yerr = abs(self.dx)<<self.res
-
-        # The error term is held at a fixed-point resolution of self.res+1
-        # This means that self.xerr, self.yerr are for _half_ a pixel of dx, dy
-        error  = ((self.x-self.p0[0]) * self.xerr)
-        error -= ((self.y-self.p0[1]) * self.yerr)
-        if self.res==0:
-            error=error<<1
-            pass
-        else:
-            error=error>>(self.res-1)
-            pass
-        self.error = error
-        return self
-    def next(self):
-        if self.is_steep: return self.next_steep()
-        return self.next_shallow()
-    def next_shallow(self):
-        if self.dx>0:
-            if self.x>self.p1[0]:
-                raise StopIteration()
-            pass
-        else:
-            if self.x<self.p1[0]:
-                raise StopIteration()
-            pass
-        r = self.x,self.y
-        self.x += self.xplus
-        self.error += self.xerr<<1
-        if self.error-self.yerr>0:
-            self.error-=self.yerr<<1
-            self.y+=1<<self.res
-            pass
-        return r
-    def next_steep(self):
-        if self.y>self.p1[1]:
-            raise StopIteration()
-        r = self.x,self.y
-        self.y += 1<<self.res
-        self.error -= self.yerr<<1
-        if self.error+self.xerr<0:
-            self.error += self.xerr<<1
-            self.x     += self.xplus
-            pass
-        return r
-
 class LineTests(unittest.TestCase):
     line_pts = {}
     line_pts[0,0,4,4,0] = [(0, 0), (1, 1), (2, 2), (3, 3), (4, 4)]
@@ -159,7 +92,7 @@ class LineTests(unittest.TestCase):
         print
         for l in line_pts:
             (x0,y0,x1,y1,r) = l
-            ln = line(x0,y0,x1,y1,r)
+            ln = drawing.line(x0,y0,x1,y1,r)
             lp=[]
             for p in ln:
                 lp.append(p)
@@ -209,38 +142,50 @@ class DrawBufferTests(unittest.TestCase):
         return self.check_buffer(d,['    ', ' *  ', '    ', '    ', ''])
     def test_tiny_horiz(self):
         d = drawing.draw_buffer(mode="1",size=(4,4))
-        d.draw_line( (0,0,4,0), value=64 )
-        d.draw_line( (0,1,4,1), value=255 )
-        d.draw_line( (0,2,4,2), value=128 )
-        d.draw_line( (0,3,4,3), value=192 )
+        for (l,v) in [((0,0,4,0),64),
+                      ((0,1,4,1), 255 ),
+                      ((0,2,4,2), 128 ),
+                      ((0,3,4,3), 192 ),
+                      ]:
+            d.draw_line( drawing.line(l[0],l[1],l[2],l[3]), value=v )
+            pass
         return self.check_buffer(d,['....', '****', '....', '****', ''])
     def test_tiny_vert(self):
         d = drawing.draw_buffer(mode="1",size=(4,4))
-        d.draw_line( (0,0,0,4), value=64 )
-        d.draw_line( (1,0,1,4), value=255 )
-        d.draw_line( (2,0,2,4), value=128 )
-        d.draw_line( (3,0,3,4), value=192 )
+        for (l,v) in [((0,0,0,4),64),
+                      ((1,0,1,4), 255 ),
+                      ((2,0,2,4), 128 ),
+                      ((3,0,3,4), 192 ),
+                      ]:
+            d.draw_line( drawing.line(l[0],l[1],l[2],l[3]), value=v )
+            pass
         return self.check_buffer(d,['.*.*', '.*.*', '.*.*', '.*.*', ''])
     def test_tiny_diag_dr(self):
         d = drawing.draw_buffer(mode="1",size=(4,4))
-        d.draw_line( (0,0,4,4), value=64 )
-        d.draw_line( (1,0,5,4), value=255 )
-        d.draw_line( (2,0,6,4), value=128 )
-        d.draw_line( (3,0,7,4), value=192 )
-        return self.check_buffer(d,['.*.*', '.*.*', ' .*.', '  .*', ''])
+        for (l,v) in [((0,0,4,4),64),
+                      ((1,0,5,4), 255 ),
+                      ((2,0,6,4), 128 ),
+                      ((3,0,7,4), 192 ),
+                      ]:
+            d.draw_line( drawing.line(l[0],l[1],l[2],l[3]), value=v )
+            pass
+        return self.check_buffer(d,['.*.*', ' .*.', '  .*', '   .', ''])
     def test_tiny_diag_dl(self):
         d = drawing.draw_buffer(mode="1",size=(4,4))
-        d.draw_line( (4,0,0,4), value=64 )
-        d.draw_line( (3,0,0,3), value=255 )
-        d.draw_line( (2,0,0,2), value=128 )
-        d.draw_line( (1,0,0,1), value=192 )
-        return self.check_buffer(d,[' *.*', '**.*', '..*.', '**. ', ''])
-    def test_tiny_diag_fill_center(self):
+        for (l,v) in [((4,0,0,4),64),
+                      ((3,0,0,3), 255 ),
+                      ((2,0,0,2), 128 ),
+                      ((1,0,0,1), 192 ),
+                      ]:
+            d.draw_line( drawing.line(l[0],l[1],l[2],l[3]), value=v )
+            pass
+        return self.check_buffer(d,[' *.*', '*.*.', '.*. ', '*.  ', ''])
+    def xtest_tiny_diag_fill_center(self):
         d = drawing.draw_buffer(mode="1",size=(4,4))
         d.fill_paths( [((0.9,0.9), (0.9,2.1), (2.1,2.1), (2.1,0.9),),
                    ],value=255 )
         return self.check_buffer(d,['    ', '**  ', '**  ', '    ', ''])
-    def test_tiny_diag_fill_rings(self):
+    def xtest_tiny_diag_fill_rings(self):
         d = drawing.draw_buffer(mode="1",size=(8,8))
         p = []
         for i in [1,2,3,4]:
