@@ -1,17 +1,6 @@
 #!/usr/bin/env python
 #a Imports
-import pygame
-import sys
-import socket
-
-import bezier
-
-#for i in range(11):
-#    for j in range(11):
-#        print i,j,bp.coord(i/10.0,j/10.0)
-#        pass
-#    pass
-#asdjh
+from gjslib.math import bezier
 
 #a Drawing functions
 #c c_screen

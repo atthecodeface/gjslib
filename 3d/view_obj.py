@@ -70,7 +70,7 @@ class c_view_obj(opengl_app.c_opengl_camera_app):
 def test_object():
     obj = opengl_obj.c_opengl_obj()
 
-    texture_filename = "earth_ico.png"
+    texture_filename = "../../gjslib_data/icosphere/earth_ico.png"
     #texture_filename = "../../1_earth_16k_div10.png"
     #texture_filename = "icosahedron.png"
     #texture_filename = "test2.png"

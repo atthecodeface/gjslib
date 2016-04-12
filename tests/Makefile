@@ -1,7 +1,11 @@
 PYTHON = PYTHONPATH=$(CURDIR)/../python:$(PYTHONPATH) /usr/bin/env python
 Q=@
 
-all: all_tests
+all: math_tests drawing_tests
 
-all_tests:
-	$(Q)$(PYTHON) ./draw_buffer.py
+math_tests:
+	$(Q)$(PYTHON) ./math/vectors.py
+	$(Q)$(PYTHON) ./math/quaternion.py
+
+drawing_tests:
+	$(Q)$(PYTHON) ./graphics/drawing.py

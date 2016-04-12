@@ -1,20 +1,14 @@
 import math
 
-def vector_prod3(a,b):
-    r = [ a[1]*b[2] - a[2]*b[1],
-          a[2]*b[0] - a[0]*b[2],
-          a[0]*b[1] - a[1]*b[0] ]
-    return r
-
 def vector_length(v):
-    return math.sqrt(dot_product(v,v))
+    return math.sqrt(vector_dot_product(v,v))
 
 def vector_separation(a,b):
     d = vector_add(a,b,scale=-1.0)
     return math.sqrt(dot_product(d,d))
 
 def vector_normalize(v, epsilon=1E-8):
-    d = math.sqrt(dot_product(v,v))
+    d = math.sqrt(vector_dot_product(v,v))
     if d<epsilon: d=1
     return vector_scale(v,1.0/d)
 
@@ -40,33 +34,76 @@ def vector_max(a, b):
         pass
     return r
 
+def _mklist(scale):
+    if type(scale)==tuple: return scale
+    if type(scale)==list: return scale
+    return [scale]
+
 def vector_scale(a,scale=1.0):
+    scale = _mklist(scale)
+    ls = len(scale)
     d = []
     for i in range(len(a)):
-        d.append(a[i]*scale)
+        d.append(a[i]*scale[i%ls])
         pass
     return d
 
 def vector_add(a,b,scale=1.0):
+    scale = _mklist(scale)
+    ls = len(scale)
     d = []
     for i in range(len(a)):
-        d.append(a[i]+b[i]*scale)
+        d.append(a[i]+b[i]*scale[i%ls])
         pass
     return d
 
-def cos_angle_between(a,b, epsilon=1E-16):
+def vector_cos_angle_between(a,b, epsilon=1E-16):
     l = vector_length(a) * vector_length(b)
     if l<epsilon: return 1.0
     return dot_product(a,b)/l
 
-def dot_product(a,b):
+def vector_dot_product(a,b):
     r = 0
     for i in range(len(a)):
         r += a[i]*b[i]
         pass
     return r
 
-def point_on_plane(p0,p1,p2,k01,k02):
+def vector_cross_product(vs):
+    """
+    Cross product a list/tuple of vectors
+    One fewer vector than the dimension is required
+    The resultant vector is 'right-handed' normal to the input vectors and
+    of length equal to the length/area/volume/hypervolume etc of the poly
+    defined by the input vectors
+    """
+    d = len(vs[0])
+    if len(vs)!=(d-1):
+        raise Exception("Cross product requires N-1 vectors of dimension N")
+    res = []
+    for i in range(d):
+        s = 1
+        if (i&1):s=-1
+        def determinant(vs,index,use_cols,pop_index,rank=d):
+            if len(use_cols)==2:
+                return vs[index][use_cols[1-pop_index]]
+            cols = use_cols[:]
+            cols.pop(pop_index)
+            #print "Here", vs, index, cols
+            sum = 0
+            s = 1
+            for j in range(d-index-1):
+                sum += s*vs[index][cols[j]]*determinant(vs,index+1,cols,j)
+                s = -s
+                pass
+            #print vs, index,sum
+            return sum
+        cols=range(d)
+        res.append(s * determinant(vs,0,cols,i))
+        pass
+    return res
+
+def vector_point_on_plane(p0,p1,p2,k01,k02):
     # mp = p0 + k01.(p1-p0) + k02.(p2-p0)
     mp = vector.add(p0, p1, scale=k01 )
     mp = vector.add(mp, p2, scale=k02 )
@@ -121,12 +158,12 @@ def closest_meeting_of_two_lines(p0, d0, p1, d1, too_close=0.0001):
 
     """
     p1p0 = vector_add(p1,p0,scale=-1.0)
-    d0d0 = dot_product(d0,d0)
-    d1d1 = dot_product(d1,d1)
-    d0d1 = dot_product(d0,d1)
+    d0d0 = vector_dot_product(d0,d0)
+    d1d1 = vector_dot_product(d1,d1)
+    d0d1 = vector_dot_product(d0,d1)
 
-    d0p10 = dot_product(d0,p1p0)
-    d1p10 = dot_product(d1,p1p0)
+    d0p10 = vector_dot_product(d0,p1p0)
+    d1p10 = vector_dot_product(d1,p1p0)
 
     D = d0d0*d1d1 - d0d1*d0d1
 
@@ -141,7 +178,7 @@ def closest_meeting_of_two_lines(p0, d0, p1, d1, too_close=0.0001):
     c1 = vector_add(p1,d1,scale=t)
 
     dc = vector_add(c1,c0,scale=-1.0)
-    dc2 = dot_product(dc,dc)
+    dc2 = vector_dot_product(dc,dc)
 
     goodness = dc2/D
     if goodness>1.0/too_close: goodness=1.0/too_close
