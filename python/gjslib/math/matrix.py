@@ -2,292 +2,10 @@
 import math
 import vectors
 import polynomial
-        
-#a c_matrix2x2
-class c_matrix2x2(object):
-    #f __init__
-    def __init__(self,m):
-        self.matrix = m
-        pass
-    #f invert
-    def invert(self):
-        det = self.matrix[0]*self.matrix[3] - self.matrix[1]*self.matrix[2]
-        if (det>-0.00000001) and (det<0.00000001):
-            self.matrix = (0.0,0.0,0.0,0.0)
-            return
-        self.matrix = (self.matrix[3]/det, -self.matrix[1]/det, -self.matrix[2]/det, self.matrix[0]/det)
-        return
-    #f apply
-    def apply(self,m):
-        return (self.matrix[0]*m[0] + self.matrix[1]*m[1],
-                self.matrix[2]*m[0] + self.matrix[3]*m[1])
-
-#a c_matrix3x3
-class c_matrix3x3(object):
-    """
-    A 3x3 matrix stored as row-major 9-element self.matrix
-    """
-    #f __init__
-    def __init__(self, m9=[0.0]*9):
-        self.matrix = m9[:]
-        pass
-    #f invert
-    def invert(self):
-        (a,b,c, d,e,f, g,h,i) = self.matrix
-        A =   e*i-f*h
-        B = -(d*i-f*g)
-        C =   d*h-e*g
-        D = -(b*i-c*h)
-        E =   a*i-c*g
-        F = -(a*h-b*g)
-        G =   b*f-c*e
-        H = -(a*f-c*d)
-        I =   a*e-b*d
-        det = a*A + b*B + c*C
-        if (det>-0.0000001) and (det<0.0000001):
-            self.matrix = [0.0]*9
-            return
-        self.matrix = [A/det, D/det, G/det,
-                       B/det, E/det, H/det,
-                       C/det, F/det, I/det]
-        pass
-    #f mult3x3
-    def mult3x3(self,m9):
-        """
-        """
-        r = []
-        for i in range(3):
-            for j in range(3):
-                v = 0
-                for k in range(3):
-                    v += self.matrix[3*i+k]*m9[3*k+j]
-                    pass
-                r.append(v)
-                pass
-            pass
-        self.matrix = r
-        pass
-    #f lookat
-    def lookat(self, eye, target, up):
-        forward = vectors.vector_add(target, eye, scale=-1.0)
-        forward = vectors.vector_normalize(forward)
-        side    = vectors.vector_prod3(forward,up)
-        side    = vectors.vector_normalize(side)
-        up      = vectors.vector_prod3(side,forward)
-        up      = vectors.vector_normalize(up)
-        self.matrix = (side[0], side[1], side[2],
-                       up[0], up[1], up[2],
-                       -forward[0], -forward[1], -forward[2])
-        pass
-    #f apply
-    def apply(self,xyz):
-        """
-        """
-        r = []
-        for i in range(3):
-            v = 0
-            for k in range(3):
-                v += self.matrix[3*i+k]*xyz[k]
-                pass
-            r.append(v)
-            pass
-        return r
-    #f __repr__
-    def __repr__(self):
-        return str(self.matrix)
-    pass
-
-#a c_matrix4x4
-class c_matrix4x4(object):
-    """
-    A 4x4 matrix stored as row-major 16-element self.matrix
-    """
-    #f __init__
-    def __init__(self,
-                 r0=(1.0,0.0,0.0,0.0),
-                 r1=(0.0,1.0,0.0,0.0),
-                 r2=(0.0,0.0,1.0,0.0),
-                 r3=(0.0,0.0,0.0,1.0)):
-        self.matrix = [r0[0],r0[1],r0[2],r0[3],
-                       r1[0],r1[1],r1[2],r1[3],
-                       r2[0],r2[1],r2[2],r2[3],
-                       r3[0],r3[1],r3[2],r3[3],]
-        pass
-    #f copy
-    def copy(self):
-        m = c_matrix4x4()
-        m.matrix = self.matrix[:]
-        return m
-    #f transpose
-    def transpose(self):
-        m = self.matrix
-        self.matrix = [m[0], m[4], m[8], m[12],
-                       m[1], m[5], m[9], m[13],
-                       m[2], m[6], m[10], m[14],
-                       m[3], m[7], m[11], m[15]]
-        pass
-    #f scale
-    def scale(self, scale):
-        if type(scale)==int:
-            scale = float(scale)
-            pass
-        if type(scale)==float:
-            scale = (scale, scale, scale)
-            pass
-        if len(scale)==2:
-            scale = (scale[0], scale[1], 1.0)
-            pass
-        m = c_matrix4x4( r0=(scale[0],0.0,0.0,0.0),
-                         r1=(0.0,scale[1],0.0,0.0),
-                         r2=(0.0,0.0,scale[2],0.0),
-                         r3=(0.0,0.0,0.0,1.0) )
-        self.mult4x4(m)
-        pass
-    #f perspective
-    def perspective(self,fov,aspect,zFar,zNear):
-        f = 1/math.tan(fov*3.14159265/180.0/2)
-        self.matrix = [f/aspect, 0.0, 0.0, 0.0,
-                       0.0, f, 0.0, 0.0,
-                       0.0, 0.0, (zFar+zNear)/(zFar-zNear), 2.0*(zFar*zNear)/(zFar-zNear),
-                       0.0, 0.0, -1.0, 0.0]
-        pass
-    #f translate
-    def translate(self,xyz,scale=1.0):
-        m = [1,0,0,xyz[0]*scale,
-             0,1,0,xyz[1]*scale,
-             0,0,1,xyz[2]*scale,
-             0,0,0,1]
-        self.mult4x4(m)
-        pass
-    #f mult3x3
-    def mult3x3(self,m=None,m9=None,m3=None,column_major=True):
-        """
-        Multiply by a 3x3 matrix as either row-major 9 element m9
-        or row or column major 3x3 m3.
-        OpenGL is column major for 3x3 matrices
-        """
-        if m is not None:
-            m9 = m.matrix
-            pass
-        if m3 is not None:
-            if column_major:
-                m9 = (m3[0][0], m3[1][0], m3[2][0],
-                      m3[0][1], m3[1][1], m3[2][1],
-                      m3[0][2], m3[1][2], m3[2][2])                  
-                pass
-            else:
-                m9 = (m3[0][0], m3[0][1], m3[0][2],
-                      m3[1][0], m3[1][1], m3[1][2],
-                      m3[2][0], m3[2][1], m3[2][2])                  
-                pass
-        m = [m9[0], m9[1], m9[2], 0,
-             m9[3], m9[4], m9[5], 0,
-             m9[6], m9[7], m9[8], 0,
-             0, 0, 0, 1]
-        self.mult4x4(m)
-        pass
-    #f mult4x4
-    def mult4x4(self,m, premult=False):
-        """
-        Multiply by a 4x4 matrix as row-major 16-element m
-        """
-        if premult:
-            return self.premult4x4(m)
-        if type(m)==c_matrix4x4:
-            m=m.matrix
-            pass
-        r = []
-        for i in range(4):
-            for j in range(4):
-                v = 0
-                for k in range(4):
-                    v += self.matrix[4*i+k]*m[4*k+j]
-                    pass
-                r.append(v)
-                pass
-            pass
-        self.matrix = r
-        pass
-    #f premult4x4
-    def premult4x4(self,m):
-        """
-        Premultiply by a 4x4 matrix as row-major 16-element m
-        """
-        if type(m)==c_matrix4x4:
-            m=m.matrix
-            pass
-        r = []
-        for i in range(4):
-            for j in range(4):
-                v = 0
-                for k in range(4):
-                    v += m[4*i+k]*self.matrix[4*k+j]
-                    pass
-                r.append(v)
-                pass
-            pass
-        self.matrix = r
-        pass
-    #f projection
-    def projection(self):
-        """
-        Return 3x3 top left matrix as new c_matrix3x3
-        """
-        return c_matrix3x3([self.matrix[0],self.matrix[1],self.matrix[2],
-                            self.matrix[4],self.matrix[5],self.matrix[6],
-                            self.matrix[8],self.matrix[9],self.matrix[10]])
-    #f apply
-    def apply(self,xyz,perspective=True):
-        """
-        """
-        m = list(xyz)
-        m.append(1.0)
-        r = []
-        for i in range(4):
-            v = 0
-            for k in range(4):
-                v += self.matrix[4*i+k]*m[k]
-                pass
-            r.append(v)
-            pass
-        if perspective:
-            try:
-                r[0] /= r[3]
-                r[1] /= r[3]
-                r[2] /= r[3]
-                pass
-            except:
-                pass
-            pass
-        return r
-    #f get_matrix
-    def get_matrix(self, linear=True, row_major=True):
-        m = self.matrix
-        if not row_major:
-            m = self.copy()
-            m.transpose()
-            m = m.matrix
-            pass
-        if linear:
-            return m
-        return [ [m[0],  m[1],   m[2],  m[3]],
-                 [m[4],  m[5],   m[6],  m[7]],
-                 [m[8],  m[9],  m[10], m[11]],
-                 [m[12], m[13], m[14], m[15]] ]
-    #f __repr__
-    def __repr__(self):
-        r = ""
-        for i in range(4):
-            r+="["
-            for j in range(4):
-                r += " %12.9f"%self.matrix[i*4+j]
-                pass
-            r += "\n"
-            pass
-        return r
-
-#a c_matrixNxN
-class c_matrixNxN(object):
+  
+#a Classes
+#c matrix
+class matrix(object):
     """
     N x N matrix, held in a linear list in row-major order
 
@@ -313,9 +31,21 @@ class c_matrixNxN(object):
     def multiply_matrices( cls, matrix_0, matrix_1 ):
         m = cls.multiply_matrix_data(matrix_0.order, matrix_0.matrix, matrix_1.matrix)
         return cls(data=m)
+    #f lookat
+    @classmethod
+    def lookat(cls, eye, target, up):
+        forward = vectors.vector_add(target, eye, scale=-1.0)
+        forward = vectors.vector_normalize(forward)
+        side    = vectors.vector_cross_product([forward,up])
+        side    = vectors.vector_normalize(side)
+        up      = vectors.vector_cross_product([side,forward])
+        up      = vectors.vector_normalize(up)
+        return cls(data= (side[0], side[1], side[2],
+                          up[0], up[1], up[2],
+                          -forward[0], -forward[1], -forward[2]))
     #f combine_lu
     @classmethod
-    def combine_lu( cls, L, U):
+    def combine_lu(cls, L, U):
         m = U.copy()
         for c in range(U.order):
             for r in range(U.order):
@@ -358,8 +88,8 @@ class c_matrixNxN(object):
     #f __repr__
     def __repr__(self):
         return str(self.matrix)
-    #f identity
-    def identity(self):
+    #f set_identity
+    def set_identity(self):
         n = self.order
         for r in range(n):
             for c in range(n):
@@ -384,7 +114,46 @@ class c_matrixNxN(object):
         return self.matrix[c:n*n+c:n]
     #f copy
     def copy(self):
-        return c_matrixNxN(data=self.matrix)
+        return matrix(data=self.matrix)
+    #f expand
+    def expand(self, order):
+        if order<self.order:
+            raise Exception("Attempt to shrink a matrix order with 'expand'")
+        while self.order<order:
+            n = self.order
+            d = self.matrix
+            self.matrix = [0]*(n+1)*(n+1)
+            self.order = n+1
+            self.matrix[-1] = 1.0
+            for r in range(n):
+                for c in range(n):
+                    self.matrix[r*(n+1)+c] = d[r*n+c]
+                pass
+            pass
+        return self
+    #f shrink
+    def shrink(self, order, r=0, c=0):
+        if order+r>self.order:
+            raise Exception("Attempt to shrink with data beyond the width of the matrix")
+        if order+c>self.order:
+            raise Exception("Attempt to shrink with data beyond the height of the matrix")
+        data = [0]*order*order
+        for i in range(order):
+            for j in range(order):
+                data[order*i+j] = self[r+i,c+j]
+                pass
+            pass
+        self.matrix = data
+        self.order = order
+        return self
+    #f set_perspective
+    def set_perspective(self,fov,aspect,zFar,zNear):
+        f = 1/math.tan(fov*3.14159265/180.0/2)
+        self.matrix = [f/aspect, 0.0, 0.0, 0.0,
+                       0.0, f, 0.0, 0.0,
+                       0.0, 0.0, (zFar+zNear)/(zFar-zNear), 2.0*(zFar*zNear)/(zFar-zNear),
+                       0.0, 0.0, -1.0, 0.0]
+        pass
     #f scale
     def scale(self, scale=1.0):
         n = self.order
@@ -393,11 +162,22 @@ class c_matrixNxN(object):
         if type(scale)==float:
             scale = [scale]*n
         for r in range(n):
-            for c in range(n):
+            for c in range(min(n,len(scale))):
                 self[r,c] *= scale[c]
                 pass
             pass
         return self
+    #f translate
+    def translate(self,v,scale=1.0):
+        m = [0]*self.order*self.order
+        for i in range(self.order):
+            if i<self.order-1:
+                m[i*self.order+self.order-1] = v[i]
+                pass
+            m[i*(self.order+1)] = 1
+            pass
+        self.premult(matrix(data=m))
+        pass
     #f apply
     def apply(self, v):
         n = self.order
@@ -425,12 +205,12 @@ class c_matrixNxN(object):
     #f premult
     def premult(self, matrix=None, data=None):
         if matrix is not None: data=matrix.matrix
-        self.matrix = c_matrixNxN.multiply_matrix_data(self.order, data, self.matrix)
+        self.matrix = matrix.multiply_matrix_data(self.order, data, self.matrix)
         return self
     #f postmult
     def postmult(self, matrix=None, data=None):
         if matrix is not None: data=matrix.matrix
-        self.matrix = c_matrixNxN.multiply_matrix_data(self.order, self.matrix, data)
+        self.matrix = matrix.multiply_matrix_data(self.order, self.matrix, data)
         return self
 
     #f lup_decompose
@@ -491,7 +271,7 @@ class c_matrixNxN(object):
         we will find (with all 'n' x) the inverse
         """
         n = self.order
-        R = c_matrixNxN(order=n)
+        R = matrix(order=n)
 
         # For each column in the identity matrix...
         for c in range(n):
@@ -543,7 +323,7 @@ class c_matrixNxN(object):
         for r in range(n):
             data.extend(self.get_row(P.index(r)))
             pass
-        return c_matrixNxN(data=data)
+        return matrix(data=data)
     #f determinant
     def determinant(self):
         """
@@ -644,32 +424,22 @@ class c_matrixNxN(object):
             return m_i.apply(v)
             pass
         pass
-    #f translate
-    def translate(self,xyz=(0,0,0),scale=1.0):
-        n = self.order
-        if n==4:
-            self.postmult(c_matrixNxN(data=[1,0,0,xyz[0]*scale,
-                                            0,1,0,xyz[1]*scale,
-                                            0,0,1,xyz[2]*scale,
-                                            0,0,0,1]))
-            return self
-        raise Exception("Translate requires order 4 matrix")
     #f All done
     pass
 #a Main
 def main():
     print "Eigenvectors of (3,0, 2,1)"
-    a = c_matrixNxN(data=[3.,0.,2.,1.])
+    a = matrix(data=[3.,0.,2.,1.])
     print "Eigen values",a.eigenvalues()
     for e in a.eigenvalues():
         print a.eigenvector(e)
     print "Eigenvectors of (1,0, -2,3)"
-    a = c_matrixNxN(data=[1.,0.,-2.,3.])
+    a = matrix(data=[1.,0.,-2.,3.])
     print "Eigen values",a.eigenvalues()
     for e in a.eigenvalues():
         print a.eigenvector(e)
     print "Eigenvectors of (1,0,1, 4,3,1, -2,3,2)"
-    a = c_matrixNxN(data=[1.,0.,1., 4.,3.,1., -2.,3.,2.])
+    a = matrix(data=[1.,0.,1., 4.,3.,1., -2.,3.,2.])
     print "Eigen values",a.eigenvalues()
     for e in a.eigenvalues():
         print a.eigenvector(e)
@@ -681,21 +451,21 @@ def main():
         pass
     die
     print "LU decompose of 1,2 4,3 should be U=4,3 0,1.25  L= 1,0 0.25,1, P = 2,1; as one matrix this is 4,3, 0.25,1.25"
-    a = c_matrixNxN(data=[1.,2.,4.,3.])
+    a = matrix(data=[1.,2.,4.,3.])
     print "A", a
     lup = a.lup_decompose()
     print "LUP", lup
     a_i = lup[0].lup_invert(lup[1])
     print "A inverse", a_i
-    print c_matrixNxN.multiply_matrices(a,a_i)
+    print matrix.multiply_matrices(a,a_i)
 
     print
     print "More matrices"
-    #a = c_matrixNxN(data=[1.,0.,0.,1.])
-    a = c_matrixNxN(data=[1.,2.,3,4.,5.,4.,6.,3,2.])
-    #L = c_matrixNxN(data=[1.,0.,0.,2.,1.,0.,3.,4.,1.])
-    #U = c_matrixNxN(data=[3.,4.,6.,0.,2.,9.,0.,0.,1.])
-    #LU = c_matrixNxN.combine_lu(L,U)
+    #a = matrix(data=[1.,0.,0.,1.])
+    a = matrix(data=[1.,2.,3,4.,5.,4.,6.,3,2.])
+    #L = matrix(data=[1.,0.,0.,2.,1.,0.,3.,4.,1.])
+    #U = matrix(data=[3.,4.,6.,0.,2.,9.,0.,0.,1.])
+    #LU = matrix.combine_lu(L,U)
     #print "LU", LU
     #lup = (LU, lup[1])
     print "A", a
@@ -703,11 +473,11 @@ def main():
     print "LUP", lup
     a_i = lup[0].lup_invert(lup[1])
     print "A inverse", a_i
-    print c_matrixNxN.multiply_matrices(a,a_i)
+    print matrix.multiply_matrices(a,a_i)
 
-    for a in [c_matrixNxN(data=[1.,0.,0.,0.,  0.,4.,2.,0., -5.,0.,0.,1., 0.,0.,1.,0.]),
-              c_matrixNxN(data=[-1.,3.,4.,5.,  0.,4.,2.,1., -5.,5.,2.,-3., -4.,3.,2.,1.]),
-              c_matrixNxN(data=[-8.780454382560094, 4.24389067150205, 4.057661342681895, 1.1304208758453387, 0.2038639118735965, 6.330794706227703, -5.484817504274374, -0.16412212696591522, 25.412595302329905, 26.87675575660128, 20.381364036786152, 11.636150566231086, -13.519396156451739, -14.71734561903741, -9.402934211915941, -2.2477595541890696])
+    for a in [matrix(data=[1.,0.,0.,0.,  0.,4.,2.,0., -5.,0.,0.,1., 0.,0.,1.,0.]),
+              matrix(data=[-1.,3.,4.,5.,  0.,4.,2.,1., -5.,5.,2.,-3., -4.,3.,2.,1.]),
+              matrix(data=[-8.780454382560094, 4.24389067150205, 4.057661342681895, 1.1304208758453387, 0.2038639118735965, 6.330794706227703, -5.484817504274374, -0.16412212696591522, 25.412595302329905, 26.87675575660128, 20.381364036786152, 11.636150566231086, -13.519396156451739, -14.71734561903741, -9.402934211915941, -2.2477595541890696])
               ]:
         print
         print "4 by 4..."
@@ -717,7 +487,7 @@ def main():
         L,U = lup[0].lu_split()
         print "U",U
         print "L",L
-        LU=c_matrixNxN.multiply_matrices(L,U)
+        LU=matrix.multiply_matrices(L,U)
         print "L.U", LU
         print "L.U.P which should be A", LU.unpivot(lup[1])
 

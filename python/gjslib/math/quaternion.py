@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #a Imports
 import math
-from matrix import c_matrix3x3, c_matrix4x4, c_matrixNxN
+from matrix import matrix
 
 #a quaternion
 class quaternion( object ):
