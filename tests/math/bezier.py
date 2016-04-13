@@ -18,7 +18,7 @@ class SimpleBezierTests(unittest.TestCase):
             self.assertTrue(abs(value[i]-d[i])<epsilon, 'Coordinate %d mismatches'%i)
             pass
         pass
-    def test_bezier2(self):
+    def xtest_bezier2(self):
         b = bezier_quad(pts=([0],[4],[4]))
         print b
         print b.straight_enough(0.1)

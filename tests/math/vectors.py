@@ -8,25 +8,50 @@ epsilon = 1E-9
 #a Test
 #c Simple vector tests
 class SimpleVectorTests(unittest.TestCase):
+    """
+    Functions to test:
+    vector_scale - in test_scale
+    vector_dot_product - covered by cos_angle_between, length tests, normalize
+    vector_squared - in test_length
+    vector_length  - in test_length
+    vector_separation - in plane_points
+    vector_point_on_plane - in plane_points
+    vector_normalize - in test_normalize
+    vector_add - test_add
+    vector_min
+    vector_max
+    vector_cos_angle_between
+    """
+    #f check_scalar
     def check_scalar(self,d,value):
         self.assertTrue(abs(d-value)<epsilon, 'Scalars differ too much %s,%s'%(str(d),str(value)))
         pass
+    #f check_vector
     def check_vector(self,d,value):
         self.assertEqual(len(value),len(d), 'Length of vectors differs')
         for i in range(len(d)):
             self.assertTrue(abs(value[i]-d[i])<epsilon, 'Coordinate %d mismatches'%i)
             pass
         pass
+    #f test_length
     def test_length(self):
+        """
+        Test that the length of a vector is calculated correctly
+        """
         for (v,l) in [((1,),1), 
                       ((1,1),math.sqrt(2)),
                       ((1,-1),math.sqrt(2)),
                       ((1,2,3,4,5,6),9.53939201417),
                       ]:
             self.check_scalar(vector_length(v),l)
+            self.check_scalar(vector_squared(v),l*l)
             pass
         return
+    #f test_normalize
     def test_normalize(self):
+        """
+        Test that vectors are normalized correctly
+        """
         for v in [(1,),
                       (1,1),
                       (1,2,3,4,5,6),
@@ -37,18 +62,52 @@ class SimpleVectorTests(unittest.TestCase):
             self.check_scalar(vector_dot_product(vn,v),vector_length(v))
             pass
         return
+    #f test_plane_points
+    def test_plane_points(self):
+        """
+        Test points on a plane and separation between vectors
+        """
+        pts_lists = []
+        pts_lists.append( ((0,0),(1,0),(0,1)) )
+        pts_lists.append( ((10,10,10),(1,0,-1),(5,0,-5)) )
+        for pts in pts_lists:
+            (p0,p1,p2) = pts
+            tp0 = vector_point_on_plane(p0,p1,p2,0,0)
+            tp1 = vector_point_on_plane(p0,p1,p2,1,0)
+            tp2 = vector_point_on_plane(p0,p1,p2,0,1)
+            tp12m = vector_point_on_plane(p0,p1,p2,0.5,0.5)
+
+            self.check_scalar(vector_separation(tp0,p0),0)
+            self.check_scalar(vector_separation(tp1,p1),0)
+            self.check_scalar(vector_separation(tp2,p2),0)
+            self.check_scalar(vector_separation(tp12m,p1),vector_separation(p1,p2)/2)
+            self.check_scalar(vector_separation(tp12m,p2),vector_separation(p1,p2)/2)
+            pass
+        return
+    #f test_scale
     def test_scale(self):
+        """
+        Test scaling of vectors, by scalars and by lists
+        """
         self.check_vector(vector_scale((3,4,5),(2,)),(6,8,10))
         self.check_vector(vector_scale((3,4,5),(1,2,3)),(3,8,15))
         self.check_vector(vector_scale((3,4,5),-1),(-3,-4,-5))
         return
+    #f test_add
     def test_add(self):
+        """
+        Test addition of vectors including scaling
+        """
         self.check_vector(vector_add((3,4,5),(1,0,-1)),(4,4,4))
         self.check_vector(vector_add((3,4,5),(1,0,-1),2.0),(5,4,3))
         self.check_vector(vector_add((3,4,5),(1,0,-1),(2.0,)),(5,4,3))
         self.check_vector(vector_add((3,4,5),(1,0,1),(2.0,0,-2.0)),(5,4,3))
         return
+    #f test_vector_product
     def test_vector_product(self):
+        """
+        Test a variety of n-dimensional vector products
+        """
         tests = { ((1,2),):(2,-1),
                   ((1,0,0),(0,1,0)):(0,0,1),
                   ((0,1,0),(1,0,0)):(0,0,-1),
@@ -74,6 +133,12 @@ class SimpleVectorTests(unittest.TestCase):
                 pass
             self.check_vector(vcp,r)
             pass
+        pass
+    #f test_scalar_vector_product
+    def xtest_scalar_vector_product(self):
+        """
+        This is more playing rather than testing. Not part of the suite.
+        """
         #(a,b,c) = (1,2,3),(4,0,1),(5,4,2)
         #print vector_add(vector_cross_product([vector_cross_product([a,b]),c]),c,scale=-vector_dot_product(a,b))
         #print vector_add(vector_cross_product([a,vector_cross_product([b,c])]),a,scale=-vector_dot_product(c,b))
