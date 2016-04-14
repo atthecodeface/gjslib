@@ -2,7 +2,8 @@
 import math
 import fractions
 
-from complex import c_complex
+from complex import complex
+
 #a Classes
 #c c_quadratic
 class c_quadratic(object):
@@ -18,9 +19,9 @@ class c_quadratic(object):
         return b*b/(4*a*a)-c/a
     def find_all_roots(self):
         (a,b,c) = self.coeffs
-        r = c_complex(real=self.discriminant).pow(1/2.0)
-        r0 = c_complex(real=-b/(2*a)).add(r)
-        r1 = c_complex(real=-b/(2*a)).add(r,scale=-1.0)
+        r = complex(real=self.discriminant).pow(1/2.0)
+        r0 = complex(real=-b/(2*a)).add(r)
+        r1 = complex(real=-b/(2*a)).add(r,scale=-1.0)
         return (r0, r1)
     def find_real_roots(self,epsilon=1E-6):
         (a,b,c) = self.coeffs
@@ -97,7 +98,7 @@ class c_cubic(object):
         #print "a,b,c,d",(a,b,c,d)
         return (-d/2, d*d/4+c*c*c/27)
     def find_all_roots(self):
-        cube_root_1 = c_complex(polar=(1,3.14159265*2/3))
+        cube_root_1 = complex(polar=(1,3.14159265*2/3))
         roots = []
 
         dc = self.get_depressed_cubic()
@@ -105,7 +106,7 @@ class c_cubic(object):
         if (C==0):
             for i in range(3):
                 sel_cube_root_1 = cube_root_1.copy().pow(i)
-                x = c_complex(real=-D).multiply(sel_cube_root_1).add(c_complex(real=dc.notes[1]))
+                x = complex(real=-D).multiply(sel_cube_root_1).add(complex(real=dc.notes[1]))
                 roots.append(x)
                 pass
             return roots
@@ -113,20 +114,20 @@ class c_cubic(object):
         u3 = dc.cardano_u3()
         #print "u3",u3
         # u3 for one root is cubert(u3[0] + sqrt(u3[1]))
-        s = c_complex(real=u3[1]).sqrt()
+        s = complex(real=u3[1]).sqrt()
         #print "s",s
-        u3 = s.add(c_complex(real=u3[0]))
+        u3 = s.add(complex(real=u3[0]))
         for i in range(3):
             sel_cube_root_1 = cube_root_1.copy().pow(i)
             u = s.pow(1/3.0)
             #print "s",s
             u.multiply(sel_cube_root_1)
             #print "u.cube_root_1",u
-            v = u.copy().reciprocal().multiply(c_complex(real=-C/3.0))
+            v = u.copy().reciprocal().multiply(complex(real=-C/3.0))
             #print "u, v",u, v
             mu = u.copy().add(v)
             #print "mu",mu
-            x = mu.add(c_complex(real=dc.notes[1]))
+            x = mu.add(complex(real=dc.notes[1]))
             #print "x", x
             roots.append(x)
             pass
@@ -411,10 +412,10 @@ def main():
         for c in c.find_all_roots():
             c3 = c.copy().pow(3.0)
             c2 = c.copy().pow(2.0)
-            c3 = c3.multiply(c_complex(real=coeffs[0]))
-            c2 = c2.multiply(c_complex(real=coeffs[1]))
-            c  = c.multiply(c_complex(real=coeffs[2]))
-            r = c_complex(real=coeffs[3]).add(c).add(c2).add(c3)
+            c3 = c3.multiply(complex(real=coeffs[0]))
+            c2 = c2.multiply(complex(real=coeffs[1]))
+            c  = c.multiply(complex(real=coeffs[2]))
+            r = complex(real=coeffs[3]).add(c).add(c2).add(c3)
             print "Poly result",r
             r = r.real()
             if r is None or (r<-1E-6) or (r>1E-6):
