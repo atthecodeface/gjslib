@@ -16,6 +16,10 @@ class SimpleComplexTests(unittest.TestCase):
     __sub__ - in math
     __mul_ - in math
     __div__ - in math
+    __pow__ - in math
+    __neg__ - in math
+    __abs__ - in math
+    __nonzero__ - in make
     copy - in make
     cartesian - in make
     add - in math
@@ -25,10 +29,10 @@ class SimpleComplexTests(unittest.TestCase):
     conjugate - in math
     to_cartesian
     sqrt - in math
-    pow - in math
+    pow - in math, math2
     to_polar
     polar
-    real
+    real, imaginary in math2
     """
     def check_scalar(self,d,value):
         self.assertTrue(abs(d-value)<epsilon, 'Scalars differ too much %s,%s'%(str(d),str(value)))
@@ -42,11 +46,15 @@ class SimpleComplexTests(unittest.TestCase):
             pass
         pass
     def test_make(self):
-        for (r,i) in [(1,0),(0,1),(1,1),(2,3),(4,5),(3,-1)]:
+        for (r,i) in [(1,0),(0,1),(1,1),(2,3),(4,5),(3,-1),(0,0)]:
             c = complex(cartesian=(r,i))
             self.check_scalar(c.cartesian()[0],r)
             self.check_scalar(c.cartesian()[1],i)
             self.check_scalar(c.polar()[0],math.sqrt(i*i+r*r))
+            if (r==0) and (i==0):
+                self.assertFalse(bool(c), 'Zero is apparently nonzero')
+            else:
+                self.assertTrue(bool(c), 'Nonzero is apparently zero')
             d = c.copy()
             c += complex(cartesian=(1,1))
             self.check_scalar(d.cartesian()[0],r)
@@ -68,6 +76,7 @@ class SimpleComplexTests(unittest.TestCase):
             m = c.modulus()
             self.check_scalar(e.cartesian()[0],m*m)
             self.check_scalar(e.cartesian()[1],0)
+            self.check_scalar(abs(c),m)
             ci = c.reciprocal()
             f = ci*c
             self.check_scalar(f.cartesian()[0],1)
@@ -102,6 +111,19 @@ class SimpleComplexTests(unittest.TestCase):
             self.check_scalar(g.cartesian()[1],i)
             pass
         pass
+    def test_math2(self):
+        e = complex(real=math.exp(1))
+        d=pow(e,complex(imaginary=math.pi))
+        self.check_scalar(d.real(),-1)
+        self.check_scalar(d.imaginary(),0)
+        d=pow(e,complex(imaginary=math.pi/2))
+        self.check_scalar(d.real(),0)
+        self.check_scalar(d.imaginary(),1)
+        d=pow(e,complex(real=1,imaginary=math.pi/2))
+        self.check_scalar(d.real(),0)
+        self.check_scalar(d.imaginary(),math.exp(1))
+        pass
+
 
 #a Toplevel
 loader = unittest.TestLoader().loadTestsFromTestCase

@@ -8,18 +8,24 @@ class complex(object):
     """
     #f __init__
     def __init__(self, real=None, imaginary=None, cartesian=None, polar=None):
+        if cartesian is None:
+            cartesian = (None,None)
         if real is not None:
-            cartesian = (real, 0)
+            cartesian = (real, cartesian[0])
             pass
         if imaginary is not None:
-            cartesian = (0,imaginary)
+            cartesian = (cartesian[0], imaginary)
             pass
         if polar is not None:
+            cartesian = (None, None)
             self._polar = (float(polar[0]), float(polar[1]))
             self._cartesian = None
             pass
-        if cartesian is not None:
-            self._cartesian = (float(cartesian[0]), float(cartesian[1]))
+        if cartesian != (None,None):
+            (a,b) = cartesian
+            if a is None: a=0
+            if b is None: b=0
+            self._cartesian = (float(a), float(b))
             self._polar = None
             pass
         pass
@@ -51,6 +57,23 @@ class complex(object):
     def __div__(self,a):
         s = self.copy().reciprocal()
         return (s*a).reciprocal()
+    #f __neg__ - negation
+    def __neg__(self):
+        s = self.copy()
+        return s.multiply(-1.0)
+    #f __pow__ - power
+    def __pow__(self,a):
+        s = self.copy()
+        return s.pow(a)
+    #f __abs__ - absolute value, i.e. magnitude
+    def __abs__(self):
+        return self.modulus()
+    #f __nonzero__ - return True if nonzero
+    def __nonzero__(self):
+        if self._polar is not None: return (self._polar[0]!=0)
+        if self._cartesian[0]!=0: return True
+        if self._cartesian[1]!=0: return True
+        return False
     #f copy - return copy of the complex number
     def copy(self):
         return complex(cartesian=self._cartesian, polar=self._polar)
@@ -117,11 +140,30 @@ class complex(object):
         a = self.copy().to_polar()
         a._polar = (math.sqrt(a._polar[0]), a._polar[1]/2)
         return a
-    #f pow - raise complex number to an integer/float power
+    #f pow - raise complex number to a complex/integer/float power
     def pow(self,p):
-        a = self.copy().to_polar()
-        a._polar = (math.pow(a._polar[0],p), a._polar[1]*p)
-        return a
+        """
+        Raises a complex number to the power 'p'
+
+        If p=a+ib then x^(a+ib) = x^a.x^ib
+        If x is expressed as Re^(i.theta) then x^a = R^a.e^(i.theta.a),
+        i.e. for the real part 'a' of p we need a new polar of x with modulus R^a and angle a*theta
+        Similarly, x^(ib) = R^(ib).(e^(i.theta)^(ib)) = R^(ib).e^(b.theta.(i^2)) = e^(ib.ln(R)).e^(-b.theta)
+        Hence x^ib is a polar complex number of modululs e^(-b.theta) and angle b.ln(R)
+        Finally, x^p is these two numbers multiplied together, i.e.
+        modulus e^(-b.theta).R^a and angle a*theta+b.ln(R)
+        """
+        x = self.copy().to_polar()
+        (R, theta) = x._polar
+        if type(p)!=complex:
+            p = complex(real=p)
+            pass
+        p = p.copy().to_cartesian()
+        (a, b) = p._cartesian
+        x._polar = (math.pow(R,a) / math.exp(b*theta),
+                    theta*a + b*math.log(R))
+        x = x.to_cartesian() # to ensure a consistent representation - otherwise theta could be outside the range -pi,pi
+        return x
     #f to_cartesian - convert to cartesian variant
     def to_cartesian(self):
         if self._cartesian is None:
@@ -130,12 +172,14 @@ class complex(object):
             self._polar = None
             pass
         return self
-    #f real - return real value or None if imaginary coefficient exceeds epsilon
-    def real(self, epsilon=1E-6):
+    #f real - return real part of value
+    def real(self):
         self.to_cartesian()
-        (r,i) = self._cartesian
-        if i<-epsilon or i>epsilon: return None
-        return r
+        return self._cartesian[0]
+    #f imaginary - return imaginary part of value
+    def imaginary(self):
+        self.to_cartesian()
+        return self._cartesian[1]
     #f __repr__ - return string representation
     def __repr__(self):
         if self._cartesian is not None:
