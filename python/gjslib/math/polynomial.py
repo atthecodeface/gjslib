@@ -103,44 +103,47 @@ class cubic(object):
     """
     #f __init__
     def __init__(self, a,b,c,d, notes=None):
-        self.coeffs = (float(a),float(b),float(c),float(d))
-        self.notes = notes
+        self._coeffs = (a+0.0, b+0.0, c+0.0, d+0.0)
+        self._notes = notes
         pass
+    #f coeffs
+    def coeffs(self):
+        return self._coeffs
     #f discriminant
     def discriminant(self):
-        (a,b,c,d) = self.coeffs
-        return  ( 18*a*b*c*d + 
-                  -4*b*b*b*d + 
+        (a,b,c,d) = self._coeffs
+        return  ( a*b*c*d*18 + 
+                  -b*b*b*d*4 + 
                   b*b*c*c +
-                  -4*a*c*c*c +
-                  -27*a*a*d*d )
+                  -a*c*c*c*4 +
+                  -a*a*d*d*27 )
     #f get_depressed_cubic
     def get_depressed_cubic(self):
-        (a,b,c,d) = self.coeffs
-        ba3 = b/(3*a)
+        (a,b,c,d) = self._coeffs
+        ba3 = b/(a*3)
         ca = c/a
-        p = ca - 3*ba3*ba3
-        q = 2*ba3*ba3*ba3 - ba3*ca + d/a
+        p = ca - ba3*ba3*3
+        q = ba3*ba3*ba3*2 - ba3*ca + d/a
         return cubic(a=1, b=0, c=p, d=q, notes=(self, -ba3, "+y"))
     #f cardano_u3
     def cardano_u3(self):
         """
         """
-        (a,b,c,d) = self.coeffs
+        (a,b,c,d) = self._coeffs
         # a should be 1, b should be 0
         #print "a,b,c,d",(a,b,c,d)
-        return (-d/2, d*d/4+c*c*c/27)
+        return (-d/2, d*d/4 + c*c*c/27)
     #f find_all_roots
     def find_all_roots(self):
         cube_root_1 = complex(polar=(1,math.pi*2/3))
         roots = []
 
         dc = self.get_depressed_cubic()
-        (C,D) = dc.coeffs[2:]
+        (C,D) = dc._coeffs[2:]
         if (C==0):
             for i in range(3):
                 sel_cube_root_1 = cube_root_1.copy().pow(i)
-                x = complex(real=-D).multiply(sel_cube_root_1).add(complex(real=dc.notes[1]))
+                x = complex(real=-D).multiply(sel_cube_root_1).add(complex(real=dc._notes[1]))
                 roots.append(x)
                 pass
             return roots
@@ -161,7 +164,7 @@ class cubic(object):
             #print "u, v",u, v
             mu = u.copy().add(v)
             #print "mu",mu
-            x = mu.add(complex(real=dc.notes[1]))
+            x = mu.add(complex(real=dc._notes[1]))
             #print "x", x
             roots.append(x)
             pass
@@ -171,9 +174,8 @@ class cubic(object):
         roots = self.find_all_roots()
         real_roots = []
         for r in roots:
-            real = r.real(epsilon=epsilon)
-            if real is not None:
-                real_roots.append(real)
+            if abs(r.cartesian()[1])<epsilon:
+                real_roots.append(r.cartesian()[0])
             pass
         return real_roots
     #f num_real_roots
@@ -184,8 +186,8 @@ class cubic(object):
         return 1
     #f __repr__
     def __repr__(self):
-        r = "%6fx^3 + %6fx^2 + %6fx + %6f"%self.coeffs
-        return r+str(self.notes)
+        r = "%6fx^3 + %6fx^2 + %6fx + %6f"%self._coeffs
+        return r+str(self._notes)
 
 #c polynomial
 class polynomial(object):

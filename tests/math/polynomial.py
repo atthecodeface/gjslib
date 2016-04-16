@@ -72,6 +72,33 @@ class QuadraticTests(TestBase):
 
 #c Cubic tests
 class CubicTests(TestBase):
+    def test_real_coeffs(self):
+        i = complex(imaginary=1)
+        z = complex()
+        r = complex(real=1)
+        rt2 = pow(2,0.5)
+        rt3 = pow(3,0.5)
+
+        c_x3_m_1 = cubic(1,0,0,-1)
+        self.check_vector(c_x3_m_1.coeffs(),(1,0,0,-1))
+        self.check_vector(c_x3_m_1.find_real_roots(),[1])
+
+        c = cubic(1,0,0,1)
+        self.check_vector(c.find_real_roots(),[-1])
+
+        c = cubic(1,3,3,1)
+        self.check_vector(c.find_real_roots(),[-1, -1, -1])
+
+        c = cubic(1,-3,3,-1)
+        self.check_vector(c.find_real_roots(),[1, 1, 1])
+
+        c = cubic(1,-6,11,-6)
+        self.check_vector(c.find_real_roots(),[3,1,2])
+
+        c = cubic(1,0,0,1)
+        self.check_vector(c.find_all_roots(),[-r, r/2-i*rt3/2, r/2+i*rt3/2])
+        c = cubic(1,-6,11,-6)
+        self.check_vector(c.find_all_roots(),[r*3,r*1,r*2])
     pass
 
 #c Polynomial tests
