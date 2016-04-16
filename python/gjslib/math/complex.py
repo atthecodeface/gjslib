@@ -16,17 +16,17 @@ class complex(object):
         if imaginary is not None:
             cartesian = (cartesian[0], imaginary)
             pass
+        self._cartesian = None
+        self._polar = None
         if polar is not None:
             cartesian = (None, None)
             self._polar = (float(polar[0]), float(polar[1]))
-            self._cartesian = None
             pass
-        if cartesian != (None,None):
+        if self._polar is None:
             (a,b) = cartesian
             if a is None: a=0
             if b is None: b=0
             self._cartesian = (float(a), float(b))
-            self._polar = None
             pass
         pass
     #f __add__ - infix add of complex with int/float/complex
@@ -55,12 +55,15 @@ class complex(object):
         return s
     #f __div__ - infix division of complex by int/float/complex
     def __div__(self,a):
-        s = self.copy().reciprocal()
-        return (s*a).reciprocal()
+        s = self.copy()
+        if type(a)!=complex:
+            a=complex(real=a)
+            pass
+        return s*(a.reciprocal())
     #f __neg__ - negation
     def __neg__(self):
         s = self.copy()
-        return s.multiply(-1.0)
+        return s.multiply(complex(real=-1.0))
     #f __pow__ - power
     def __pow__(self,a):
         s = self.copy()
@@ -160,8 +163,13 @@ class complex(object):
             pass
         p = p.copy().to_cartesian()
         (a, b) = p._cartesian
-        x._polar = (math.pow(R,a) / math.exp(b*theta),
-                    theta*a + b*math.log(R))
+        if R==0:
+            x._polar = (math.pow(R,a), 0)
+            pass
+        else:
+            x._polar = (math.pow(R,a) / math.exp(b*theta),
+                        theta*a + b*math.log(R))
+            pass
         x = x.to_cartesian() # to ensure a consistent representation - otherwise theta could be outside the range -pi,pi
         return x
     #f to_cartesian - convert to cartesian variant

@@ -5,42 +5,62 @@ import fractions
 from complex import complex
 
 #a Classes
-#c c_quadratic
-class c_quadratic(object):
+#c quadratic
+class quadratic(object):
     """
     Quadratic class, with solution - convenience really
     """
+    #f __init__
     def __init__(self, a,b,c, notes=None):
-        self.coeffs = (float(a),float(b),float(c))
-        self.notes = notes
+        self._coeffs = (a+0.0, b+0.0, c+0.0)
+        self._notes = notes
         pass
+    #f coeffs
+    def coeffs(self):
+        return self._coeffs
+    #f discriminant
     def discriminant(self):
-        (a,b,c) = self.coeffs
-        return b*b/(4*a*a)-c/a
+        # Note use a*a*4 rather than 4*a*a so that if a is complex it still works
+        (a,b,c) = self._coeffs
+        return b*b/(a*a*4)-c/a
+    #f find_all_roots
     def find_all_roots(self):
-        (a,b,c) = self.coeffs
-        r = complex(real=self.discriminant).pow(1/2.0)
-        r0 = complex(real=-b/(2*a)).add(r)
-        r1 = complex(real=-b/(2*a)).add(r,scale=-1.0)
-        return (r0, r1)
+        """
+        Find all roots of f(x)==0 as complex numbers
+        """
+        (a,b,c) = self._coeffs
+        d = self.discriminant()
+        if type(d)!=complex: d=complex(real=d)
+        r = pow(d,0.5)
+        return (r-b/(a*2), -r-b/(a*2))
+    #f find_real_roots
     def find_real_roots(self,epsilon=1E-6):
-        (a,b,c) = self.coeffs
+        """
+        Find real roots if coefficients are real
+        """
+        (a,b,c) = self._coeffs
         d = self.discriminant()
         if d<0:
             return []
         r = math.sqrt(d)
         return [-b/(2*a) + r, -b/(2*a) - r]
+    #f __repr__
     def __repr__(self):
-        r = "%6fx^2 + %6fx + %6f"%self.coeffs
+        r = "%6fx^2 + %6fx + %6f"%self._coeffs
         return r+str(self.notes)
+    #f All done
+    pass
 
-#c c_cubic
-class c_cubic(object):
+#c cubic
+class cubic(object):
     """
     Cubic class, with solution and number of real roots
 
-    A cubic is a.x^3 + b.x^2 + c.x + d = C
-    A depressed cubic for C=0 has a=1, b=0; a substitution of y=x+b/3a, or x=y-b/3a yields
+    A cubic is f(x)= a.x^3 + b.x^2 + c.x + d
+    Finding the root of a cubic is finding what value of x leads to f(x)=0.
+
+    A depressed cubic for f(x)=0 has a=1, b=0 (i.e. y^3+C.y+D=0)
+    A substitution of y=x+b/3a, hence x=y-b/3a, into the initial equation yields
 
     a.y^3 -a.3.b/3a.y^2 + 3.a.b*b/(9a.a).y - a.b*b*b/(27.a.a.a) +
           b.y^2 - b.2.b/3a.y + b.b.b/(9a.a) +
@@ -48,17 +68,45 @@ class c_cubic(object):
     = a.y^3 -b.y^2 + b.b/3a.y   - b.b.b/(27.a.a) 
             +b.y^2 - 2.b.b/3a.y + b.b.b/(9.a.a) +
                             c.y - c.b/3a + d
-    = a.y^3 + (c-b.b/3a).y - c.b/3a + d + 2b.b.b/(27.a.a)
-    = C
-    C/a = y^3 + (c/a-b.b/3a.a).y  - c/a.b/3a    + d/a + 2b.b.b/(27.a.a.a) = 0
-    C/a = y^3 + (c/a-3(b/3a)^2).y - c/a.(b/3a) + d/a + 2(b/3a)^3 = 0
-    
+    = a.y^3 + (c-b.b/3a).y - c.b/3a + d + 2b.b.b/(27.a.a) = 0
 
+    Hence, 
+    y^3 + (c/a-b.b/3a.a).y  - c/a.b/3a    + d/a + 2b.b.b/(27.a.a.a) = 0
+    y^3 + (c/a-3(b/3a)^2).y - c/a.(b/3a) + d/a + 2(b/3a)^3 = 0
+
+    Hence we have:
+    C = c/a - 3.(b/3a)^2
+    D = c/a . (b/3a) + d/a + 2.(b/3a)^3
+
+    Cardano started with a depressed cubic
+    y^3 + Cx + D = 0
+    and substituted in y=u+v, hence y^3 = u^3 + v^3 + 3uv(u+v)
+
+    u^3 + v^3 + 3uv(u+v) + C(u+v) + D = 0
+    u^3 + v^3 + (u+v)(C+3uv) + D = 0
+
+    Now, setting also uv = -C/3 we get:
+    u^3 + v^3 + D = 0
+    u^6 + v^3.u^3 + D.u^3 = 0
+
+    But v=-C/3u, or v^3 = -C^3/27u^3, hence:
+    u^6 + v^3.u^3 + D.u^3 = 0
+    u^6 + D.u^3 - C^3/27 = 0
+
+    If w = u^3, then w^2 + D.w - C^3/27 = 0
+    and w = -D/2 +- sqrt( D^2/4 - C^3/27) (by the quadratic formula)
+    Hence w can be found, hence u, hence v, hence y, hence x
+
+    Note that if w = 0 then we must have C=0,
+    and if C=0 we can go back as we have x^3 + D = 0,
+    and hence X=cube_root(-D)
     """
+    #f __init__
     def __init__(self, a,b,c,d, notes=None):
         self.coeffs = (float(a),float(b),float(c),float(d))
         self.notes = notes
         pass
+    #f discriminant
     def discriminant(self):
         (a,b,c,d) = self.coeffs
         return  ( 18*a*b*c*d + 
@@ -66,37 +114,23 @@ class c_cubic(object):
                   b*b*c*c +
                   -4*a*c*c*c +
                   -27*a*a*d*d )
+    #f get_depressed_cubic
     def get_depressed_cubic(self):
         (a,b,c,d) = self.coeffs
         ba3 = b/(3*a)
         ca = c/a
         p = ca - 3*ba3*ba3
         q = 2*ba3*ba3*ba3 - ba3*ca + d/a
-        return c_cubic(a=1, b=0, c=p, d=q, notes=(self, -ba3, "+y"))
+        return cubic(a=1, b=0, c=p, d=q, notes=(self, -ba3, "+y"))
+    #f cardano_u3
     def cardano_u3(self):
         """
-        Cardano started with a depressed cubic
-        x^3 + Cx + D = 0
-        and substituted in x=u+v, hence x^3 = u^3 + v^3 + 3uv(u+v)
-        u^3 + v^3 + 3uv(u+v) + C(u+v) + D = 0
-        u^3 + v^3 + (u+v)(C+3uv) + D = 0
-        Now, setting also uv = -C/3 we get:
-        u^3 + v^3 + D = 0
-        u^6 + v^3.u^3 + D.u^3 = 0
-        But v=-C/3u, or v^3 = -C^3/27u^3
-        u^6 + v^3.u^3 + D.u^3 = 0
-        u^6 + D.u^3 - C^3/27 = 0
-        If w = u^3, then w^2 + D.w - C^3/27 = 0
-        and w = -D/2 +- sqrt( D^2/4 - C^3/27)
-
-        Note that if w = 0 then we must have C=0,
-        and if C=0 we can go back as we have x^3 + D = 0,
-        and hence X=cube_root(-D)
         """
         (a,b,c,d) = self.coeffs
         # a should be 1, b should be 0
         #print "a,b,c,d",(a,b,c,d)
         return (-d/2, d*d/4+c*c*c/27)
+    #f find_all_roots
     def find_all_roots(self):
         cube_root_1 = complex(polar=(1,math.pi*2/3))
         roots = []
@@ -132,6 +166,7 @@ class c_cubic(object):
             roots.append(x)
             pass
         return roots
+    #f find_real_roots
     def find_real_roots(self,epsilon=1E-6):
         roots = self.find_all_roots()
         real_roots = []
@@ -141,29 +176,40 @@ class c_cubic(object):
                 real_roots.append(real)
             pass
         return real_roots
+    #f num_real_roots
     def num_real_roots(self):
         d = self.discriminant()
         if d>=0:
             return 3
         return 1
+    #f __repr__
     def __repr__(self):
         r = "%6fx^3 + %6fx^2 + %6fx + %6f"%self.coeffs
         return r+str(self.notes)
 
-#c c_polynomial
-class c_polynomial( object ):
+#c polynomial
+class polynomial(object):
+    """
+    A polynomial class that supports real polynomial coefficients, with differentiation
+    """
     def __init__( self, coeffs=[0] ):
+    #f __init__
         self.coeffs=coeffs
         self.normalize()
         pass
+    #f __repr__
     def __repr__( self ):
         return str(self.coeffs)
+    #f is_constant
     def is_constant( self ):
         return len(self.coeffs)==1
+    #f is_linear
     def is_linear( self ):
         return len(self.coeffs)==2
+    #f get_coeff
     def get_coeff( self, n ):
         return self.coeffs[n]
+    # pretty
     def pretty( self, var ):
         fmt = ""
         if len(self.coeffs)==0: return "0"
@@ -201,6 +247,7 @@ class c_polynomial( object ):
                 pass
             pass
         return result
+    #f pretty_factors
     def pretty_factors( self, var ):
         result = ""
         factors = self.factorize()
@@ -213,7 +260,7 @@ class c_polynomial( object ):
             needs_mult = True
             pass
         return result
-                
+    #f factorize
     def factorize( self ):
         import fractions
         factors = []
@@ -240,10 +287,11 @@ class c_polynomial( object ):
             factors.append(c_polynomial([f]))
             pass
         return factors
-
+    #f normalize
     def normalize( self ):
         while (len(self.coeffs)>0) and (self.coeffs[-1]==0): self.coeffs.pop()
         return
+    #f add
     def add( self, other, scale=1 ):
         r = []
         sl = len(self.coeffs)
@@ -259,7 +307,8 @@ class c_polynomial( object ):
         for i in range(ol-sl):
             r.append(scale*other.coeffs[i+sl])
             pass
-        return c_polynomial(coeffs=r)
+        return polynomial(coeffs=r)
+    #f multiply
     def multiply( self, other ):
         r = []
         sl = len(self.coeffs)
@@ -273,7 +322,8 @@ class c_polynomial( object ):
                 n+=1
                 pass
             pass
-        return c_polynomial(coeffs=r)
+        return polynomial(coeffs=r)
+    #f differentiate
     def differentiate( self ):
         r = []
         sl = len(self.coeffs)
@@ -281,6 +331,7 @@ class c_polynomial( object ):
             r.append(self.coeffs[i+1]*(i+1))
             pass
         return c_polynomial(coeffs=r)
+    #f evaluate
     def evaluate( self, x ):
         v = 0
         xn = 1
@@ -290,6 +341,7 @@ class c_polynomial( object ):
             xn = xn*x
             pass
         return v
+    #f evaluate_poly
     def evaluate_poly( self, poly ):
         """
         self(n) = Sum( coeff[i].n^i )
@@ -304,6 +356,7 @@ class c_polynomial( object ):
             pn = pn.multiply(poly)
             pass
         return result
+    #f find_root
     def find_root( self, attempt ):
         """
         Use newton-raphson...
@@ -322,6 +375,7 @@ class c_polynomial( object ):
         if -epsilon<self.evaluate(x1)<epsilon:
             return (x1, x0)
         return None
+    #f divide
     def divide( self, other ):
         sl = len(self.coeffs)
         remainder = self.coeffs[:]
@@ -395,7 +449,7 @@ def main():
                     (-1,-2,-3,-4),
                     ]:
         print "-"*80
-        c = c_cubic(coeffs[0], coeffs[1], coeffs[2], coeffs[3])
+        c = cubic(coeffs[0], coeffs[1], coeffs[2], coeffs[3])
         print "Cubic", c
         print "Discriminant", c.discriminant()
         print "Should have %d real roots"%c.num_real_roots()
@@ -423,14 +477,14 @@ def main():
             pass
         pass
 
-    a = c_polynomial( [1] )
-    b = a.multiply( c_polynomial([0, 1]) )
-    c = b.multiply( c_polynomial([1, 1]) )
-    d = c.multiply( c_polynomial([2, 1]) )
-    e = d.multiply( c_polynomial([3, 1]) )
-    f = e.multiply( c_polynomial([4, 1]) )
-    g = f.multiply( c_polynomial([5, 1]) )
-    h = g.multiply( c_polynomial([6, 1]) )
+    a = polynomial( [1] )
+    b = a.multiply( polynomial([0, 1]) )
+    c = b.multiply( polynomial([1, 1]) )
+    d = c.multiply( polynomial([2, 1]) )
+    e = d.multiply( polynomial([3, 1]) )
+    f = e.multiply( polynomial([4, 1]) )
+    g = f.multiply( polynomial([5, 1]) )
+    h = g.multiply( polynomial([6, 1]) )
 
     print a
     print b
@@ -451,9 +505,9 @@ def main():
     for i in range(10):
         print i, d.evaluate(i)
 
-    x = c_polynomial([0,1])
-    x_p_1 = c_polynomial([1,1])
-    x_m_1 = c_polynomial([-1,1])
+    x = polynomial([0,1])
+    x_p_1 = polynomial([1,1])
+    x_m_1 = polynomial([-1,1])
     print c.evaluate_poly(x_p_1).pretty("x")
     print c.evaluate_poly(x_m_1).pretty("x")
 
@@ -468,8 +522,8 @@ def main():
     print "e_diff",e_diff.pretty("i"),"   OR   ",e_diff.pretty_factors("i")
 
 
-    sum_i_0 = c_polynomial([0,1])
-    sum_i_1 = c_polynomial([0,1/2.0]).multiply(c_polynomial([1,1]))
+    sum_i_0 = polynomial([0,1])
+    sum_i_1 = polynomial([0,1/2.0]).multiply(polynomial([1,1]))
     sum_i_2 = d.add(sum_i_1,scale=-3)
     #
     # sum_i_2 = polynomial d MINUS d_diff.coeff[1]*sum_i_1
@@ -488,10 +542,10 @@ def main():
     print sum_i_1.pretty('n')
     print sum_i_2.pretty('n')
 
-    x = c_polynomial([-3,3,1])
+    x = polynomial([-3,3,1])
     print x.pretty('n') ,"=", x.pretty_factors('n')
 
-    x = c_polynomial([165.0,-55.0,18.0,-6.0,-3.0,1.0])
+    x = polynomial([165.0,-55.0,18.0,-6.0,-3.0,1.0])
     print x.pretty('n') ,"=", x.pretty_factors('n')
 
     print "\nLooking for ",610/987.0

@@ -123,8 +123,22 @@ class SimpleComplexTests(unittest.TestCase):
         self.check_scalar(d.real(),0)
         self.check_scalar(d.imaginary(),math.exp(1))
         pass
-
-
+    def test_bugs(self):
+        a = complex(real=1)
+        a.to_polar()
+        b = -a
+        self.check_scalar(b.cartesian()[0],-1)
+        self.check_scalar(b.cartesian()[1],0)
+        b = complex()
+        self.check_scalar(b.cartesian()[0],0)
+        self.check_scalar(b.cartesian()[1],0)
+        c = b * complex(real=1) * complex(imaginary=1)
+        self.check_scalar(c.cartesian()[0],0)
+        self.check_scalar(c.cartesian()[1],0)
+        c = pow(b,1)
+        self.check_scalar(c.cartesian()[0],0)
+        self.check_scalar(c.cartesian()[1],0)
+        pass
 #a Toplevel
 loader = unittest.TestLoader().loadTestsFromTestCase
 suites = [ loader(SimpleComplexTests),
