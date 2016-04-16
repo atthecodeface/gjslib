@@ -2,11 +2,33 @@
 #a Imports
 from PIL import Image
 from gjslib.math.vectors import *
+import math
 
 #a Classes
 #a Globals
 epsilon=1E-9
 
+#a Useful functions
+def hsv(h,s,v):
+    while (h<0): h+=1
+    while (h>1.0): h-=1
+    if (s<=0): return tuple([int(255*v)]*3)
+    if (s>=1): s=1
+    if (v>=1): v=1
+    h *= 6
+    hf = math.floor(h)
+    h -= hf
+    q = int(255*v*(1-s*h))
+    r = int(255*v*(1-s*(1-h)))
+    p = int(255*v*(1-s))
+    v = int(255*v)
+    if hf==0: return (v,r,p)
+    if hf==2: return (p,v,r)
+    if hf==4: return (r,p,v)
+    if hf==1: return (q,v,p)
+    if hf==3: return (p,q,v)
+    return (v,p,q)
+    
 #a Point class
 #c point
 class point(object):

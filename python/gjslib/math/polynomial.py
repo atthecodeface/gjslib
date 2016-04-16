@@ -211,51 +211,69 @@ class polynomial(object):
     """
     A polynomial class that supports real polynomial coefficients, with differentiation
     """
-    def __init__( self, coeffs=[0] ):
     #f __init__
-        self.coeffs=coeffs
+    def __init__( self, coeffs=[0] ):
+        self._coeffs=[]
+        for c in coeffs:
+            self._coeffs.append(c+0.0)
+            pass
         self.normalize()
         pass
     #f __repr__
     def __repr__( self ):
-        return str(self.coeffs)
+        return str(self._coeffs)
+    #f __add__ - infix add of complex with int/float/complex
+    def __add__(self,a):
+        return self.copy().add(a)
+    #f __sub__ - infix subtract of complex with int/float/complex
+    def __sub__(self,a):
+        return self.copy().add(a,scale=-1)
+    #f __mul__ - infix subtract of complex with int/float/complex
+    def __mul__(self,a):
+        return self.copy().multiply(a)
+    #f __neg__ - negation
+    def __neg__(self):
+        return polynomial([-1.0]).multiply(self)
     #f is_constant
     def is_constant( self ):
-        return len(self.coeffs)==1
+        return len(self._coeffs)==1
     #f is_linear
     def is_linear( self ):
-        return len(self.coeffs)==2
-    #f get_coeff
-    def get_coeff( self, n ):
-        return self.coeffs[n]
+        return len(self._coeffs)==2
+    #f coeff
+    def coeff( self, n ):
+        return self._coeffs[n]
+    #f coeffs
+    def coeffs(self):
+        return self._coeffs
     # pretty
-    def pretty( self, var ):
+    def pretty(self, var):
         fmt = ""
-        if len(self.coeffs)==0: return "0"
+        if len(self._coeffs)==0: return "0"
         result = ""
         needs_plus = False
-        for i in range(len(self.coeffs)):
-            if self.coeffs[i]==0:
+        for i in range(len(self._coeffs)):
+            if self._coeffs[i]==0:
                 pass
-            elif self.coeffs[i]==1:
+            elif self._coeffs[i]==1:
                 if needs_plus: result+=" + "
                 if i==0: fmt="1"
                 result+=fmt
                 needs_plus = True
                 pass
-            elif (self.coeffs[i]>0):
+            elif (self._coeffs[i]>0):
                 if needs_plus: result+=" + "
-                result += str(self.coeffs[i])+fmt
+                result += str(self._coeffs[i])+fmt
                 needs_plus = True
                 pass
             else:
                 if needs_plus: result+=" - "
                 else: result+="-"
-                if self.coeffs[i]==-1:
+                if self._coeffs[i]==-1:
                     if i==0: fmt="1"
                     result += fmt
                 else:
-                    result += str(-self.coeffs[i])+fmt
+                    result += str(-self._coeffs[i])+fmt
                 needs_plus = True
                 pass
             if i==0:
@@ -284,7 +302,7 @@ class polynomial(object):
         import fractions
         factors = []
         poly = self
-        while len(poly.coeffs)>1:
+        while len(poly._coeffs)>1:
             for attempt in (0.01, -1.0, -5.0, -10.0, 1.0, 5.0, 10.0):
                 x = poly.find_root(attempt)
                 if x is not None:
@@ -301,63 +319,77 @@ class polynomial(object):
             factors.append(p)
             poly = poly.divide(p)[0]
             pass
-        if len(poly.coeffs)==1:
+        if len(poly._coeffs)==1:
             f = fractions.Fraction(poly.evaluate(0)).limit_denominator(1000)
             factors.append(c_polynomial([f]))
             pass
         return factors
     #f normalize
     def normalize( self ):
-        while (len(self.coeffs)>0) and (self.coeffs[-1]==0): self.coeffs.pop()
-        return
+        """
+        A normalized polynomial has its top coefficient non-zero
+
+        The normalization process is to pop the top coefficient off while it is zero...
+        """
+        while (len(self._coeffs)>0) and (not bool(self._coeffs[-1])):
+            self._coeffs.pop()
+            pass
+        return self
     #f add
-    def add( self, other, scale=1 ):
+    def add(self, other, scale=1):
+        """
+        Add a second polynomial to this polynomial
+        """
         r = []
-        sl = len(self.coeffs)
-        ol = len(other.coeffs)
+        sl = len(self._coeffs)
+        ol = len(other._coeffs)
         for i in range(sl):
             if i>=ol:
-                r.append(self.coeffs[i])
+                r.append(self._coeffs[i])
                 pass
             else:
-                r.append(self.coeffs[i]+scale*other.coeffs[i])
+                r.append(self._coeffs[i]+scale*other._coeffs[i])
                 pass
             pass
         for i in range(ol-sl):
-            r.append(scale*other.coeffs[i+sl])
+            r.append(scale*other._coeffs[i+sl])
             pass
-        return polynomial(coeffs=r)
+        self._coeffs = r
+        return self.normalize()
     #f multiply
     def multiply( self, other ):
         r = []
-        sl = len(self.coeffs)
-        ol = len(other.coeffs)
+        sl = len(self._coeffs)
+        ol = len(other._coeffs)
         for i in range(sl):
-            v = self.coeffs[i]
+            v = self._coeffs[i]
             n = i
             for j in range(ol):
                 while n>=len(r): r.append(0)
-                r[n] += v*other.coeffs[j]
+                r[n] += v*other._coeffs[j]
                 n+=1
                 pass
             pass
-        return polynomial(coeffs=r)
+        self._coeffs = r
+        return self.normalize()
     #f differentiate
     def differentiate( self ):
         r = []
-        sl = len(self.coeffs)
+        sl = len(self._coeffs)
         for i in range(sl-1):
-            r.append(self.coeffs[i+1]*(i+1))
+            r.append(self._coeffs[i+1]*(i+1))
             pass
-        return c_polynomial(coeffs=r)
+        return polynomial(coeffs=r)
     #f evaluate
-    def evaluate( self, x ):
-        v = 0
+    def evaluate(self, x):
+        v = None
         xn = 1
-        sl = len(self.coeffs)
+        sl = len(self._coeffs)
         for i in range(sl):
-            v += xn*self.coeffs[i]
-            xn = xn*x
+            nv = xn*self._coeffs[i]
+            if v is None: v=nv
+            else: v=nv+v
+            xn = x*xn
             pass
         return v
     #f evaluate_poly
@@ -369,9 +401,9 @@ class polynomial(object):
         """
         result = c_polynomial()
         pn = c_polynomial(coeffs=[1])
-        sl = len(self.coeffs)
+        sl = len(self._coeffs)
         for i in range(sl):
-            result = result.add( pn, scale=self.coeffs[i] )
+            result = result.add( pn, scale=self._coeffs[i] )
             pn = pn.multiply(poly)
             pass
         return result
@@ -396,16 +428,16 @@ class polynomial(object):
         return None
     #f divide
     def divide( self, other ):
-        sl = len(self.coeffs)
-        remainder = self.coeffs[:]
+        sl = len(self._coeffs)
+        remainder = self._coeffs[:]
         result = []
-        ol = len(other.coeffs)
+        ol = len(other._coeffs)
         for i in range(1+sl-ol):
             shift = sl-ol-i
-            m = remainder[shift+ol-1]/other.coeffs[-1]
+            m = remainder[shift+ol-1]/other._coeffs[-1]
             result.append(m)
             for j in range(ol):
-                remainder[shift+j] -= m * other.coeffs[j]
+                remainder[shift+j] -= m * other._coeffs[j]
                 pass
             #print remainder
             remainder.pop()
