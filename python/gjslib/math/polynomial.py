@@ -98,7 +98,7 @@ class c_cubic(object):
         #print "a,b,c,d",(a,b,c,d)
         return (-d/2, d*d/4+c*c*c/27)
     def find_all_roots(self):
-        cube_root_1 = complex(polar=(1,3.14159265*2/3))
+        cube_root_1 = complex(polar=(1,math.pi*2/3))
         roots = []
 
         dc = self.get_depressed_cubic()

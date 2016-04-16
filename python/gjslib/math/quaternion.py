@@ -12,6 +12,7 @@ class quaternion( object ):
     # when given roll, pitch, yaw the order applies is roll(pitch(yaw())) - i.e. yaw is applied first
     fmt = "%7.4f"
     default_fmt = "euler"
+    default_fmt = "quat"
     #f classmethod identity - return identity quarternion
     @classmethod
     def identity( cls ):
@@ -46,8 +47,8 @@ class quaternion( object ):
     def of_rotation( cls, angle, axis, degrees=False ):
         return cls().from_rotation( angle=angle, axis=axis, degrees=degrees )
     #f __init__
-    def __init__( self, quat=None, euler=None, degrees=False, repr_fmt=None ):
-        self.quat = {"r":1, "i":0, "j":0, "k":0}
+    def __init__( self, quat=None, euler=None, degrees=False, r=1, i=0, j=0, k=0, repr_fmt=None ):
+        self.quat = {"r":float(r), "i":float(i), "j":float(j), "k":float(k)}
         self.matrix = None
         if repr_fmt is None:
             repr_fmt = self.default_fmt
@@ -78,6 +79,48 @@ class quaternion( object ):
                                                                                        self.quat["j"],
                                                                                        self.quat["k"] )
         return result
+    #f __add__ - infix add of quaternion with int/float/quaternion
+    def __add__(self,a):
+        s = self.copy()
+        if type(a)==quaternion:
+            s.add(a)
+        else:
+            s.add(other=quaternion(r=a))
+        return s
+    #f __sub__ - infix subtract of quaternion with int/float/quaternion
+    def __sub__(self,a):
+        s = self.copy()
+        if type(a)==quaternion:
+            s.add(a, scale=-1.0)
+        else:
+            s.add(other=quaternion(r=a), scale=-1.0)
+        return s
+    #f __mul__ - infix subtract of quaternion with int/float/quaternion
+    def __mul__(self,a):
+        s = self.copy()
+        if type(a)==quaternion:
+            s.multiply(a)
+        else:
+            s.multiply(other=quaternion(r=a))
+        return s
+    #f __div__ - infix division of quaternion by int/float/quaternion
+    def __div__(self,a):
+        s = self.copy().reciprocal()
+        return (s*a).reciprocal()
+    #f __neg__ - negation
+    def __neg__(self):
+        s = self.copy()
+        return s.scale(-1.0)
+    #f __abs__ - absolute value, i.e. magnitude
+    def __abs__(self):
+        return self.modulus()
+    #f __nonzero__ - return True if nonzero
+    def __nonzero__(self):
+        if self.quat["r"]!=0: return True
+        if self.quat["i"]!=0: return True
+        if self.quat["j"]!=0: return True
+        if self.quat["k"]!=0: return True
+        return False
     #f get
     def get( self ):
         return (self.quat["r"],
@@ -273,26 +316,38 @@ class quaternion( object ):
             angle  = math.degrees(angle)
             pass
         return (angle, axis)
-    #f modulus
-    def modulus( self ):
+    #f conjugate
+    def conjugate( self ):
+        self.quat["i"] = -self.quat["i"]
+        self.quat["j"] = -self.quat["j"]
+        self.quat["k"] = -self.quat["k"]
+        self.matrix = None
+        return self
+    #f reciprocal
+    def reciprocal( self ):
+        self.conjugate()
+        self.scale(1.0/self.modulus_squared())
+        return self
+    #f invert_rotation
+    def invert_rotation( self ):
+        self.reciprocal()
+        return self
+    #f modulus_squared
+    def modulus_squared( self ):
         r = self.quat["r"]
         i = self.quat["i"]
         j = self.quat["j"]
         k = self.quat["k"]
-        return math.sqrt(r*r+i*i+j*j+k*k)
+        return (r*r+i*i+j*j+k*k)
+    #f modulus
+    def modulus( self ):
+        return math.sqrt(self.modulus_squared())
     #f add
     def add( self, other, scale=1.0 ):
         self.quat["r"] += other.quat["r"] *scale
         self.quat["i"] += other.quat["i"] *scale
         self.quat["j"] += other.quat["j"] *scale
         self.quat["k"] += other.quat["k"] *scale
-        self.matrix = None
-        return self
-    #f invert_rotation
-    def invert_rotation( self ):
-        self.quat["i"] = -self.quat["i"]
-        self.quat["j"] = -self.quat["j"]
-        self.quat["k"] = -self.quat["k"]
         self.matrix = None
         return self
     #f scale
@@ -311,6 +366,16 @@ class quaternion( object ):
         return self.scale(1.0/l)
     #f multiply
     def multiply( self, other ):
+        (r1,i1,j1,k1) = self.quat["r"],self.quat["i"],self.quat["j"],self.quat["k"]
+        (r2,i2,j2,k2) = other.quat["r"],other.quat["i"],other.quat["j"],other.quat["k"]
+        r = r1*r2 - i1*i2 - j1*j2 - k1*k2
+        i = r1*i2 + i1*r2 + j1*k2 - k1*j2
+        j = r1*j2 + j1*r2 + k1*i2 - i1*k2
+        k = r1*k2 + k1*r2 + i1*j2 - j1*i2
+        self.quat={"r":r, "i":i, "j":j, "k":k }
+        return self
+    #f rotation_multiply
+    def rotation_multiply( self, other ):
         A = (self.quat["r"] + self.quat["i"])*(other.quat["r"] + other.quat["i"])
         B = (self.quat["k"] - self.quat["j"])*(other.quat["j"] - other.quat["k"])
         C = (self.quat["r"] - self.quat["i"])*(other.quat["j"] + other.quat["k"]) 
