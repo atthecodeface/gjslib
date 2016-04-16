@@ -99,6 +99,31 @@ class CubicTests(TestBase):
         self.check_vector(c.find_all_roots(),[-r, r/2-i*rt3/2, r/2+i*rt3/2])
         c = cubic(1,-6,11,-6)
         self.check_vector(c.find_all_roots(),[r*3,r*1,r*2])
+        pass
+    def test_complex_coeffs(self):
+        i = complex(imaginary=1)
+        z = complex()
+        r = complex(real=1)
+        rt2 = pow(2,0.5)
+        rt3 = pow(3,0.5)
+
+        for c in [cubic(r,z,r,r),
+                  cubic(r,z,r,r),
+                  cubic(i*16,r*4+i*2,i*3,r),
+                  cubic(1,0,1,1),
+                  cubic(1,-6,11,-6),
+                  ]:
+            coeffs = c.coeffs()
+            for r in c.find_all_roots():
+                f = r*r*r*coeffs[0]
+                f += r*r*coeffs[1]
+                f += r*coeffs[2]
+                f += coeffs[3]
+                #print f,coeffs,r
+                self.check_vector([f],[z])
+                pass
+            pass
+        pass
     pass
 
 #c Polynomial tests

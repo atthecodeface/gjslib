@@ -124,6 +124,8 @@ class cubic(object):
         ca = c/a
         p = ca - ba3*ba3*3
         q = ba3*ba3*ba3*2 - ba3*ca + d/a
+        if type(ba3)!=complex:
+            ba3 = complex(real=ba3)
         return cubic(a=1, b=0, c=p, d=q, notes=(self, -ba3, "+y"))
     #f cardano_u3
     def cardano_u3(self):
@@ -132,6 +134,11 @@ class cubic(object):
         (a,b,c,d) = self._coeffs
         # a should be 1, b should be 0
         #print "a,b,c,d",(a,b,c,d)
+        if type(d)!=complex:
+            d = complex(real=d)
+            pass
+        #print d, -d/2
+        #print d*d/4, c*c*c/27
         return (-d/2, d*d/4 + c*c*c/27)
     #f find_all_roots
     def find_all_roots(self):
@@ -139,11 +146,12 @@ class cubic(object):
         roots = []
 
         dc = self.get_depressed_cubic()
+        #print dc
         (C,D) = dc._coeffs[2:]
-        if (C==0):
+        if not bool(C):
             for i in range(3):
-                sel_cube_root_1 = cube_root_1.copy().pow(i)
-                x = complex(real=-D).multiply(sel_cube_root_1).add(complex(real=dc._notes[1]))
+                sel_cube_root_1 = pow(cube_root_1,i)
+                x = complex(real=-D)*sel_cube_root_1+dc._notes[1]
                 roots.append(x)
                 pass
             return roots
@@ -151,20 +159,21 @@ class cubic(object):
         u3 = dc.cardano_u3()
         #print "u3",u3
         # u3 for one root is cubert(u3[0] + sqrt(u3[1]))
-        s = complex(real=u3[1]).sqrt()
+        s = pow(u3[1],0.5)
         #print "s",s
-        u3 = s.add(complex(real=u3[0]))
+        u3 = u3[0] + s
+        #print "should be zero", u3*u3 + u3*D - C*C*C/27
         for i in range(3):
-            sel_cube_root_1 = cube_root_1.copy().pow(i)
-            u = s.pow(1/3.0)
-            #print "s",s
-            u.multiply(sel_cube_root_1)
-            #print "u.cube_root_1",u
-            v = u.copy().reciprocal().multiply(complex(real=-C/3.0))
+            sel_cube_root_1 = pow(cube_root_1,i)
+            u = pow(u3,1/3.0)*sel_cube_root_1
+            if type(C)!=complex:
+                C=complex(real=C)
+                pass
+            v = -C/(u*3.0)
             #print "u, v",u, v
-            mu = u.copy().add(v)
+            mu = u+v
             #print "mu",mu
-            x = mu.add(complex(real=dc._notes[1]))
+            x = mu + dc._notes[1]
             #print "x", x
             roots.append(x)
             pass
@@ -186,7 +195,15 @@ class cubic(object):
         return 1
     #f __repr__
     def __repr__(self):
-        r = "%6fx^3 + %6fx^2 + %6fx + %6f"%self._coeffs
+        if (type(self._coeffs[0])==complex or
+            type(self._coeffs[1])==complex or
+            type(self._coeffs[2])==complex or
+            type(self._coeffs[3])==complex):
+            r = "%sx^3 + %sx^2 + %sx + %s"%(str(self._coeffs[0]),str(self._coeffs[1]),str(self._coeffs[2]),str(self._coeffs[3]))
+            pass
+        else:
+            r = "%6fx^3 + %6fx^2 + %6fx + %6f"%self._coeffs
+            pass
         return r+str(self._notes)
 
 #c polynomial
