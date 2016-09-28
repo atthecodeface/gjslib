@@ -46,6 +46,10 @@ class quaternion( object ):
     @classmethod
     def of_rotation( cls, angle, axis, degrees=False ):
         return cls().from_rotation( angle=angle, axis=axis, degrees=degrees )
+    #f classmethod of_spherical_polar
+    @classmethod
+    def of_spherical_polar( cls, phi, theta, modulus=1, degrees=False ):
+        return (cls.yaw(theta, degrees=degrees) * cls.pitch(phi, degrees=degrees)).scale(modulus)
     #f __init__
     def __init__( self, quat=None, euler=None, degrees=False, r=1, i=0, j=0, k=0, repr_fmt=None ):
         self.quat = {"r":float(r), "i":float(i), "j":float(j), "k":float(k)}
@@ -134,13 +138,14 @@ class quaternion( object ):
         return self.matrix
     #f get_matrix
     def get_matrix( self, order=3 ):
-        m = self.get_matrix()
+        self.create_matrix()
+        m = self.matrix
         if order==3:
-            return c_matrixNxN(data=(m[0][0], m[0][1], m[0][2],
+            return matrix(data=(m[0][0], m[0][1], m[0][2],
                                      m[1][0], m[1][1], m[1][2],
                                      m[2][0], m[2][1], m[2][2],))
         if order==4:
-            return c_matrixNxN(data=(m[0][0], m[0][1], m[0][2], 0.0,
+            return matrix(data=(m[0][0], m[0][1], m[0][2], 0.0,
                                      m[1][0], m[1][1], m[1][2], 0.0,
                                      m[2][0], m[2][1], m[2][2], 0.0,
                                      0.0,0.0,0.0,1.0))

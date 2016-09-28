@@ -117,7 +117,7 @@ import sys, os
 import math
 sys.path.insert(0, os.path.abspath('../python'))
 
-from gjslib.math.polynomial import c_polynomial
+from gjslib.math.polynomial import polynomial
 
 #c Recurrence class
 class c_recurrence( object ):
@@ -142,7 +142,7 @@ class c_recurrence( object ):
             poly_coeffs.append(-c)
             pass
         poly_coeffs.append(1)
-        self.polynomial = c_polynomial( poly_coeffs )
+        self.polynomial = polynomial( poly_coeffs )
         self.find_constant()
         self.find_ads()
         pass
@@ -162,7 +162,7 @@ class c_recurrence( object ):
         factors = self.polynomial.factorize()
         for f in factors:
             if f.is_linear():
-                ds.append( -f.get_coeff(0) )
+                ds.append( -f.coeffs()[0] )
                 pass
             elif not f.is_constant():
                 raise Exception("Polynomial for recurrence relation must have all real roots but is %s"%(self.polynomial.pretty_factors("x")))

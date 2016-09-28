@@ -71,6 +71,7 @@ def test_object():
     obj = opengl_obj.c_opengl_obj()
 
     texture_filename = "../../gjslib_data/icosphere/earth_ico.png"
+    texture_filename = "../../gjslib_data/icosphere/earth_ico256.png"
     #texture_filename = "../../1_earth_16k_div10.png"
     #texture_filename = "icosahedron.png"
     #texture_filename = "test2.png"
@@ -79,7 +80,7 @@ def test_object():
     #f = open("icosahedron.obj")
     #obj.load_from_file(f)
     #obj.create_icosahedron()
-    obj.create_icosphere(subdivide=4)
+    obj.create_icosphere(subdivide=2)
 
     og = c_view_obj(obj=obj,
                     texture_filename=texture_filename,

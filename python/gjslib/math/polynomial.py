@@ -314,14 +314,14 @@ class polynomial(object):
                 return factors
             f = fractions.Fraction(x).limit_denominator(1000)
             xx = float(f)
-            p = c_polynomial([-f,1])
-            p = c_polynomial([-x,1])
+            p = polynomial([-f,1])
+            p = polynomial([-x,1])
             factors.append(p)
             poly = poly.divide(p)[0]
             pass
         if len(poly._coeffs)==1:
             f = fractions.Fraction(poly.evaluate(0)).limit_denominator(1000)
-            factors.append(c_polynomial([f]))
+            factors.append(polynomial([f]))
             pass
         return factors
     #f normalize
@@ -443,7 +443,7 @@ class polynomial(object):
             remainder.pop()
             pass
         result.reverse()
-        return (c_polynomial(coeffs=result),c_polynomial(coeffs=remainder))
+        return (polynomial(coeffs=result),polynomial(coeffs=remainder))
 
 #f find_eqn            
 def find_eqn( x ):

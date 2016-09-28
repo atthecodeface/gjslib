@@ -165,9 +165,9 @@ class c_opengl_app(object):
         self.window_size = window_size
         self.display_has_errored = False
         self.fonts = {}
-        self.display_matrices = {"model":  [matrix.c_matrixNxN(order=4).identity()],
-                                 "view":   [matrix.c_matrixNxN(order=4).identity()],
-                                 "project":[matrix.c_matrixNxN(order=4).identity()],
+        self.display_matrices = {"model":  [matrix.matrix(order=4).set_identity()],
+                                 "view":   [matrix.matrix(order=4).set_identity()],
+                                 "project":[matrix.matrix(order=4).set_identity()],
                                  }
         self.clips = []
         self.selected_shader = None
@@ -246,8 +246,8 @@ class c_opengl_app(object):
         pass
     #f matrix_rotate
     def matrix_rotate(self, angle, axis, matrix="model"):
-        q = quaternion.c_quaternion.of_rotation(angle=angle, axis=axis, degrees=True)
-        self.display_matrices[matrix][-1].postmult(q.get_matrixn(order=4))
+        q = quaternion.quaternion.of_rotation(angle=angle, axis=axis, degrees=True)
+        self.display_matrices[matrix][-1].postmult(q.get_matrix(order=4))
         pass
     #f matrix_translate
     def matrix_translate(self, translate, matrix="model"):
@@ -259,7 +259,7 @@ class c_opengl_app(object):
         pass
     #f matrix_identity
     def matrix_identity(self, matrix="model"):
-        self.display_matrices[matrix][-1].identity()
+        self.display_matrices[matrix][-1].set_identity()
         pass
     #f matrix_perspective
     def matrix_perspective(self, fovx=None, fovy=None, aspect=1.0, zNear=None, zFar=None, matrix="project"):
@@ -523,7 +523,7 @@ class c_opengl_camera_app(c_opengl_app):
     def __init__(self, **kwargs):
         c_opengl_app.__init__(self, **kwargs)
         self.camera = {"position":[0,0,-10],
-                       "facing":quaternion.c_quaternion.identity(),
+                       "facing":quaternion.quaternion.identity(),
                        "rpy":[0,0,0],
                        "speed":0,
                        "fov":90,
@@ -533,12 +533,12 @@ class c_opengl_camera_app(c_opengl_app):
         self.zNear=1.0
         self.zFar=40.0
         self.camera_controls = set()
-        self.camera_quats = {("roll",1):quaternion.c_quaternion.roll(+0.002),
-                             ("roll",2):quaternion.c_quaternion.roll(-0.002),
-                             ("yaw",1):quaternion.c_quaternion.yaw(+0.002),
-                             ("yaw",2):quaternion.c_quaternion.yaw(-0.002),
-                             ("pitch",1):quaternion.c_quaternion.pitch(+0.002),
-                             ("pitch",2):quaternion.c_quaternion.pitch(-0.002),
+        self.camera_quats = {("roll",1):quaternion.quaternion.roll(+0.002),
+                             ("roll",2):quaternion.quaternion.roll(-0.002),
+                             ("yaw",1):quaternion.quaternion.yaw(+0.002),
+                             ("yaw",2):quaternion.quaternion.yaw(-0.002),
+                             ("pitch",1):quaternion.quaternion.pitch(+0.002),
+                             ("pitch",2):quaternion.quaternion.pitch(-0.002),
                              }
         pass
     #f set_camera
@@ -605,9 +605,9 @@ class c_opengl_camera_app(c_opengl_app):
             pass
         if self.camera["speed"]!=0:
             m = self.camera["facing"].get_matrix()
-            self.camera["position"][0] += self.camera["speed"]*m[0][2]
-            self.camera["position"][1] += self.camera["speed"]*m[1][2]
-            self.camera["position"][2] += self.camera["speed"]*m[2][2]
+            self.camera["position"][0] += self.camera["speed"]*m[0,2]
+            self.camera["position"][1] += self.camera["speed"]*m[1,2]
+            self.camera["position"][2] += self.camera["speed"]*m[2,2]
             pass
         pass
     #f key_updown
@@ -633,7 +633,7 @@ class c_opengl_camera_app(c_opengl_app):
         if key==' ': self.camera["speed"] = 0
         if key=='e': self.camera["rpy"] = [0,0,0]
         if key=='r': self.camera["position"] = [0,0,-10]
-        if key=='r': self.camera["facing"] = quaternion.c_quaternion.identity()
+        if key=='r': self.camera["facing"] = quaternion.quaternion.identity()
         if key=='r': self.camera["fov"] = 90
         pass
     #f opengl_post_init
@@ -646,11 +646,11 @@ class c_opengl_camera_app(c_opengl_app):
             self.mvp.perspective(self.camera["fov"],self.aspect,self.zNear,self.zFar)
             pass
 
-        self.camera["facing"] = quaternion.c_quaternion.roll(self.camera["rpy"][0]).multiply(self.camera["facing"])
-        self.camera["facing"] = quaternion.c_quaternion.pitch(self.camera["rpy"][1]).multiply(self.camera["facing"])
-        self.camera["facing"] = quaternion.c_quaternion.yaw(self.camera["rpy"][2]).multiply(self.camera["facing"])
+        self.camera["facing"] = quaternion.quaternion.roll(self.camera["rpy"][0]).multiply(self.camera["facing"])
+        self.camera["facing"] = quaternion.quaternion.pitch(self.camera["rpy"][1]).multiply(self.camera["facing"])
+        self.camera["facing"] = quaternion.quaternion.yaw(self.camera["rpy"][2]).multiply(self.camera["facing"])
 
-        m = self.camera["facing"].get_matrixn(order=4)
+        m = self.camera["facing"].get_matrix(order=4)
         self.camera["position"][0] += self.camera["speed"]*m[0,2]
         self.camera["position"][1] += self.camera["speed"]*m[1,2]
         self.camera["position"][2] += self.camera["speed"]*m[2,2]
@@ -669,7 +669,7 @@ class c_opengl_camera_app(c_opengl_app):
         self.matrix_identity(matrix="model")
 
         if self.mvp is not None:
-            m3 = self.camera["facing"].get_matrix3()
+            m3 = self.camera["facing"].get_matrix(order=3)
             self.mvp.mult3x3(m9=m3.matrix)
             self.mvp.translate(self.camera["position"])
             pass
