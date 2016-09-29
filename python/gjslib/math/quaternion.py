@@ -46,10 +46,6 @@ class quaternion( object ):
     @classmethod
     def of_rotation( cls, angle, axis, degrees=False ):
         return cls().from_rotation( angle=angle, axis=axis, degrees=degrees )
-    #f classmethod of_spherical_polar
-    @classmethod
-    def of_spherical_polar( cls, phi, theta, modulus=1, degrees=False ):
-        return (cls.yaw(theta, degrees=degrees) * cls.pitch(phi, degrees=degrees)).scale(modulus)
     #f __init__
     def __init__( self, quat=None, euler=None, degrees=False, r=1, i=0, j=0, k=0, repr_fmt=None ):
         self.quat = {"r":float(r), "i":float(i), "j":float(j), "k":float(k)}
