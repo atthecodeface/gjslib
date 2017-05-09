@@ -1,5 +1,18 @@
 import math
 
+"""
+This is a spherical mapping onto triangles, where the triangles are
+then mapped on to a rectangular texture. The triangles fill the texture.
+
+It could be done with Platonic solids with a tetrahedron, an
+octahedron, or an icosahedron
+
+This version currently uses an icosahedron.
+The icosahedron is handled with spherical polar coordinates
+where the equator has ten triangles, and the poles each touch five triangles.
+The triangles on the poles are therefore at 
+This has twenty triangles
+"""
 class c_spherical_coord(object):
     tenth_pi = math.pi*0.1
     golden_ratio = (1.0 + math.sqrt(5))/2.0

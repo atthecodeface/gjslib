@@ -29,9 +29,10 @@ class quaternion( object ):
     @classmethod
     def roll( cls, angle, degrees=False ):
         return cls().from_euler( roll=angle, degrees=degrees )
-    #f classmethod from_sequence
+    #f classmethod of_sequence
     @classmethod
-    def from_sequence( cls, rotations, degrees=False ):
+    def of_sequence( cls, rotations, degrees=False ):
+        return cls().from_sequence( rotations=rotations, degrees=degrees )
         q = cls()
         for (t,n) in rotations:
             r = {"roll":cls.roll, "pitch":cls.pitch, "yaw":cls.yaw}[t](n,degrees=degrees)
@@ -128,13 +129,13 @@ class quaternion( object ):
                 self.quat["j"],
                 self.quat["k"],
                 )
-    #f get_matrix_values
-    def get_matrix_values( self ):
-        if self.matrix is None: self.create_matrix()
+    #f get_matrix_as_lists - was get_matrix_values
+    def get_matrix_as_lists( self ):
+        if self.matrix is None: self.__create_matrix()
         return self.matrix
     #f get_matrix
     def get_matrix( self, order=3 ):
-        self.create_matrix()
+        self.__create_matrix()
         m = self.matrix
         if order==3:
             return matrix(data=(m[0][0], m[0][1], m[0][2],
@@ -146,8 +147,8 @@ class quaternion( object ):
                                      m[2][0], m[2][1], m[2][2], 0.0,
                                      0.0,0.0,0.0,1.0))
         raise Exception("Get matrix of unsupported order")
-    #f create_matrix
-    def create_matrix( self ):
+    #f __create_matrix
+    def __create_matrix( self ):
         # From http://www.gamasutra.com/view/feature/131686/rotating_objects_using_quaternions.php?page=2
         # calculate coefficients
         l = self.modulus()
@@ -180,6 +181,14 @@ class quaternion( object ):
 
         self.matrix = m
         pass
+    #f from_sequence
+    def from_sequence( self, rotations, degrees=False ):
+        cls = type(self)
+        for (t,n) in rotations:
+            r = {"roll":cls.roll, "pitch":cls.pitch, "yaw":cls.yaw}[t](n,degrees=degrees)
+            self.multiply(r, premultiply=True)
+            pass
+        return self
     #f from_euler
     def from_euler( self, rpy=None, pitch=0, yaw=0, roll=0, modulus=None, degrees=False ):
         """
@@ -329,8 +338,8 @@ class quaternion( object ):
         self.conjugate()
         self.scale(1.0/self.modulus_squared())
         return self
-    #f invert_rotation
-    def invert_rotation( self ):
+    #f invert_rotation_deprecated_used_reciprocal
+    def invert_rotation_deprecated_used_reciprocal( self ):
         self.reciprocal()
         return self
     #f modulus_squared
@@ -366,17 +375,20 @@ class quaternion( object ):
             return self
         return self.scale(1.0/l)
     #f multiply
-    def multiply( self, other ):
+    def multiply(self, other, premultiply=False):
         (r1,i1,j1,k1) = self.quat["r"],self.quat["i"],self.quat["j"],self.quat["k"]
         (r2,i2,j2,k2) = other.quat["r"],other.quat["i"],other.quat["j"],other.quat["k"]
+        if premultiply:
+            ((r1,i1,j1,k1), (r2,i2,j2,k2)) = ((r2,i2,j2,k2), (r1,i1,j1,k1))
+            pass
         r = r1*r2 - i1*i2 - j1*j2 - k1*k2
         i = r1*i2 + i1*r2 + j1*k2 - k1*j2
         j = r1*j2 + j1*r2 + k1*i2 - i1*k2
         k = r1*k2 + k1*r2 + i1*j2 - j1*i2
         self.quat={"r":r, "i":i, "j":j, "k":k }
         return self
-    #f rotation_multiply
-    def rotation_multiply( self, other ):
+    #f rotation_multiply_what_is_this
+    def rotation_multiply_what_is_this( self, other ):
         A = (self.quat["r"] + self.quat["i"])*(other.quat["r"] + other.quat["i"])
         B = (self.quat["k"] - self.quat["j"])*(other.quat["j"] - other.quat["k"])
         C = (self.quat["r"] - self.quat["i"])*(other.quat["j"] + other.quat["k"]) 
@@ -424,4 +436,113 @@ class quaternion( object ):
         k = scale0 * self.quat["k"] + scale1 * sgn_cosom * other.quat["k"]
         r = scale0 * self.quat["r"] + scale1 * sgn_cosom * other.quat["r"]
         return quaternion( quat={"r":r, "i":i, "j":j, "k":k } )
+    #f rotate_vector
+    def rotate_vector(self, xyz):
+        qc = self.copy().conjugate()
+        qxyz = quaternion(r=0,i=xyz[0],j=xyz[1],k=xyz[2])
+        qxyz_r = qc * qxyz * self
+        return ( qxyz_r.quat["i"],
+                 qxyz_r.quat["j"],
+                 qxyz_r.quat["k"] )
 
+#a Test-y stuff for quick testing (for full testing, see tests/...)
+def veclen(xyz):
+    return math.sqrt(xyz[0]*xyz[0] + xyz[1]*xyz[1] + xyz[2]*xyz[2])
+
+def lookat_complex(xyz, up):
+    # Remove any xyz from up, to get up_perp (parallel to up, perpendicular to xyz)
+    # Hence we want xyz.up_perp = 0, so break up into up_perp and dxyz,
+    # where dxyz = k*xyz
+    # Now        up = up_perp     +     dxyz
+    # and so xyz.up = xyz.up_perp + k*xyz.xyz
+    #        xyz.up = 0           + k*|xyz||xyz|
+    # Hence k = xyz.up / (|xyz| ^ 2)
+    # No need to do this really though, as if we determine xyz quaternion (r),
+    # we find that r.up = (a,b,z) and r.up_perp - (a,b,0) - i.e. a,b are the same
+    dp = xyz[0]*up[0] + xyz[1]*up[1] + xyz[2]*up[2]
+    dp = dp / (veclen(xyz)*veclen(xyz))
+    up_perp = [(up[i]-dp*xyz[i]) for i in range(3) ]
+    print up_perp
+    print xyz[0]*up_perp[0] + xyz[1]*up_perp[1] + xyz[2]*up_perp[2]
+
+    q = quaternion(r=0,i=xyz[0],j=xyz[1],k=xyz[2])
+    q.normalize()
+    pitch = math.asin(q.quat["i"])
+    yaw   = math.atan2(q.quat["j"],q.quat["k"])
+
+    r = quaternion.yaw(-yaw) *quaternion.pitch(pitch)
+
+    # For the following, cos = cos(angle/2), sin = sin(angle/2)
+    # Yaw   is (cos, sin, 0,   0)
+    # Pitch is (cos, 0, sin,   0)
+    # Roll  is (cos, 0,   0, sin)
+    # cos(pitch/2) = cp, sin(pitch/2) = sp
+    # cos(yaw/2) = cy, sin(yaw/2) = sy
+    #r = (cy,sy,0,0) * (cp,0,sp,0)
+    #r = (cy*cp, cp*sy, cy*sp, sy*sp)
+    print "Check quaternion at yaw/pitch", r, math.cos(pitch/2)*math.cos(-yaw/2), math.cos(pitch/2)*math.sin(-yaw/2), math.cos(-yaw/2)*math.sin(pitch/2), math.sin(-yaw/2)*math.sin(pitch/2)
+
+    rxyz = r.rotate_vector(up_perp)
+    print "x,y,z of up after looking at",r.rotate_vector(up)
+    print "x,y,z of up_perp after looking at",rxyz
+    print "x,y,z of xyz after looking at",r.rotate_vector(xyz)
+
+    # What is y of r.rotate_vector(up)? This is the 'j' result
+    # r.rotate_vector(up) = (r,-i,-j,-k) * (0,ux,uy,uz) * (r,i,j,k)
+    # or, we can consider the vector u has been rotated by yaw (around x) and then by pitch (around y)
+    # Now u rotated by pitch around y is (ux*cp-uz*sp, uy, uz*cp+ux*sp)
+    # And u rotated by yaw around x is (ux, uy*cy+uz*sy, uz*cy-uy*sy)
+    # Now this rotated by pitch around y is (ux*cp-(uz*cy-uy*sy)*sp,
+    #                                        uy*cy+uz*sy,
+    #                                        ux*sp+(uz*cy-uy*sy)*cp)
+    cy = math.cos(-yaw)
+    sy = math.sin(-yaw)
+    cp = math.cos(pitch)
+    sp = math.sin(pitch)
+    (ux,uy,uz) = up
+    print (ux*cp-(uz*cy-uy*sy)*sp,
+           uy*cy+uz*sy,
+           ux*sp+(uz*cy-uy*sy)*cp)
+
+    roll = math.atan2(uy*cy+uz*sy, ux*cp-uz*cy*sp+uy*sy*sp)
+    r = r * quaternion.roll(roll)
+    rxyz = r.rotate_vector(up_perp)
+    print "x,y,z of up after looking at",rxyz
+
+
+    return r
+    
+def lookat(xyz, up):
+    pitch = math.asin(xyz[0] / veclen(xyz))
+    yaw   = -math.atan2(xyz[1] , xyz[2])
+
+    cy = math.cos(yaw)
+    sy = math.sin(yaw)
+    cp = math.cos(pitch)
+    sp = math.sin(pitch)
+    (ux,uy,uz) = up
+    roll = math.atan2(uy*cy+uz*sy, ux*cp-uz*cy*sp+uy*sy*sp)
+    r = quaternion.yaw(yaw) * quaternion.pitch(pitch) * quaternion.roll(roll)
+    print "A", r
+    r = quaternion().from_euler(roll=-roll, pitch=-pitch, yaw=-yaw).conjugate()
+    print "B", r
+    return r
+    
+def main():
+    print quaternion.identity().rotate_vector([1,2,3])
+    print quaternion.pitch(90,True).rotate_vector([1,2,3]) # -3, 2, 1
+    print quaternion.pitch(30,True).rotate_vector([1,2,3]) # -.633=1*cos(30)-3*sin(30), 2, 3.098=3*cos(30)+1*sin(30)
+    print quaternion.yaw(90,True).rotate_vector([1,2,3])   # 1,  3, -2
+    print quaternion.yaw(30,True).rotate_vector([1,2,3])   # 1,  3.23=2*cos(30)+3*sin(30), 1.59=3*cos(30)-2*sin(30)
+    print quaternion.roll(90,True).rotate_vector([1,2,3])  # 2, -1, 3
+    print "\nLookat"
+    q = lookat([1,2,3],[4,5,4])
+    qc = q.copy().conjugate()
+    print q
+    print "Expect [0,0,1]*|[1,2,3]", q.rotate_vector([1,2,3])
+    print "Expect [1,2,3]/|1,2,3| = 0.267,0.534,0.802",qc.rotate_vector([0,0,1])
+    print "Expect [x,0,z]", q.rotate_vector([1+4,2+5,3+4])
+    print "Expect [x2,0,z2]", q.rotate_vector([4,5,4])
+    pass
+
+if __name__=="__main__": main()

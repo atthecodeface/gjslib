@@ -51,7 +51,7 @@ out vec3 color;
 uniform sampler2D sampler;
 void main(){
     float brightness;
-    brightness = 1.0 / (1.0-(V_c.z/5));
+    brightness = 1.0;// / (1.0-(V_c.z/5));
     color = texture(sampler,UV).rgb*brightness;
 }
 """
@@ -608,10 +608,12 @@ class c_opengl_camera_app(c_opengl_app):
                 pass
             pass
         if self.camera["speed"]!=0:
-            m = self.camera["facing"].get_matrix()
-            self.camera["position"][0] += self.camera["speed"]*m[2,0]
-            self.camera["position"][1] += self.camera["speed"]*m[2,1]
-            self.camera["position"][2] += self.camera["speed"]*m[2,2]
+            # Seems like position is actually some multiple of 'facing'...
+            m = (1,0,0) # in-out when facing images
+            self.camera["position"][0] += self.camera["speed"]*m[2]
+            self.camera["position"][1] += self.camera["speed"]*m[1]
+            self.camera["position"][2] += self.camera["speed"]*m[0]
+            #print self.camera["position"]
             pass
         pass
     #f key_updown
@@ -651,14 +653,11 @@ class c_opengl_camera_app(c_opengl_app):
             self.mvp.perspective(self.camera["fov"],self.aspect,self.zNear,self.zFar)
             pass
 
-        self.camera["facing"] = quaternion.quaternion.roll(self.camera["rpy"][0]).multiply(self.camera["facing"])
-        self.camera["facing"] = quaternion.quaternion.pitch(self.camera["rpy"][1]).multiply(self.camera["facing"])
-        self.camera["facing"] = quaternion.quaternion.yaw(self.camera["rpy"][2]).multiply(self.camera["facing"])
+        #self.camera["facing"] = quaternion.quaternion.roll(self.camera["rpy"][0]).multiply(self.camera["facing"])
+        #self.camera["facing"] = quaternion.quaternion.pitch(self.camera["rpy"][1]).multiply(self.camera["facing"])
+        #self.camera["facing"] = quaternion.quaternion.yaw(self.camera["rpy"][2]).multiply(self.camera["facing"])
 
         m = self.camera["facing"].get_matrix(order=4)
-        self.camera["position"][0] += self.camera["speed"]*m[0,2]
-        self.camera["position"][1] += self.camera["speed"]*m[1,2]
-        self.camera["position"][2] += self.camera["speed"]*m[2,2]
 
         if focus_xxyyzz is not None:
             m2 = m.copy()

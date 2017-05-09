@@ -25,6 +25,7 @@ class c_obj(object):
         self.uv_map = []
         self.normals = []
         self.faces = []
+        self.lines = []
         self.opengl_surface = {}
         pass
     #f reset
@@ -34,6 +35,7 @@ class c_obj(object):
         self.uv_map = []
         self.normals = []
         self.faces = []
+        self.lines = []
         pass
     #f find_bbox
     def find_bbox(self):
@@ -172,6 +174,15 @@ class c_obj(object):
         self.faces.append( (self.face_of_triple(nv,nt,nv),
                             self.face_of_triple(nv+1,nt+1,nv+1),
                             self.face_of_triple(nv+2,nt+2,nv+2)) )
+        pass
+    #f add_line
+    def add_line(self, xyz_list):
+        nv = len(self.vertices)
+        self.vertices.extend(xyz_list)
+        # do we need to extend uv_map and normals? Yes, as they are in sync
+        self.normals.extend(xyz_list)
+        self.uv_map.extend( [(0,0)]*len(xyz_list) )
+        self.lines.append( (nv, len(xyz_list)) )
         pass
     #f add_rectangle
     def add_rectangle(self,xyz,dxyz0,dxyz1,uv=(0.0,0.0),duv0=(1.0,0.0),duv1=(0.0,1.0)):

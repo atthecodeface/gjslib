@@ -1,4 +1,22 @@
 #!/usr/bin/env python
+#a To do
+# check reference counts
+# check get_matrix
+# check get_matrix_as_lists
+# check rotate_vector
+# check interpolate
+# check conjugate
+# check reciprocal
+# check from_sequence
+# check from_euler
+# check from_rotation
+# check of_rotation
+# check modulus_squared
+# check lookat
+# check scale
+# check multiply (premultiply)
+# check add
+
 #a Imports
 import math
 from gjslib.math.quaternion import *
@@ -36,15 +54,15 @@ class SimpleQuatTests(unittest.TestCase):
         self.check_quat(quaternion.pitch(-pi/2),(1/sqrt2,0,-1/sqrt2,0))
         self.check_quat(quaternion.roll(-pi/2),(1/sqrt2,0,0,-1/sqrt2))
         self.check_quat(quaternion.yaw(-pi/2),(1/sqrt2,-1/sqrt2,0,0))
-        self.check_quat(quaternion.from_sequence([("roll",pi/2)]),(1/sqrt2,0,0,1/sqrt2))
-        self.check_quat(quaternion.from_sequence([("pitch",pi/2)]),(1/sqrt2,0,1/sqrt2,0))
-        self.check_quat(quaternion.from_sequence([("yaw",pi/2)]),(1/sqrt2,1/sqrt2,0,0))
+        self.check_quat(quaternion.of_sequence([("roll",pi/2)]),(1/sqrt2,0,0,1/sqrt2))
+        self.check_quat(quaternion.of_sequence([("pitch",pi/2)]),(1/sqrt2,0,1/sqrt2,0))
+        self.check_quat(quaternion.of_sequence([("yaw",pi/2)]),(1/sqrt2,1/sqrt2,0,0))
         self.check_quat(quaternion.of_euler(roll=90,degrees=True),(1/sqrt2,0,0,1/sqrt2))
         self.check_quat(quaternion.of_euler(pitch=90,degrees=True),(1/sqrt2,0,1/sqrt2,0))
         self.check_quat(quaternion.of_euler(yaw=90,degrees=True),(1/sqrt2,1/sqrt2,0,0))
         self.check_quat(quaternion.of_euler(roll=90,yaw=90,degrees=True),(0.5,0.5,0.5,0.5))
-        self.check_quat(quaternion.from_sequence([("yaw",pi/2),("roll",pi/2)]),(0.5,0.5,0.5,0.5))
-        self.check_quat(quaternion.from_sequence([("roll",pi/2),("yaw",pi/2)]),(0.5,0.5,-0.5,0.5))
+        self.check_quat(quaternion.of_sequence([("yaw",pi/2),("roll",pi/2)]),(0.5,0.5,0.5,0.5))
+        self.check_quat(quaternion.of_sequence([("roll",pi/2),("yaw",pi/2)]),(0.5,0.5,-0.5,0.5))
         return
     def test_rotation(self):
         # +y to right, +x up, +z in front

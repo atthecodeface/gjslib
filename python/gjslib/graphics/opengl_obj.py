@@ -50,8 +50,22 @@ class c_opengl_obj(c_obj):
                                      normal[0], normal[1], normal[2],
                                      uv_map[0], uv_map[1]] )
                 num_vectors += 1
-                index_list.append(len(index_list))
+                index_list.append(len(vector_list)/8-1) # 8 floats per vector
                 pass
+            pass
+        self.opengl_surface["faces"] = (0,len(index_list))
+        self.opengl_surface["lines"] = []
+
+        for (vi,nv) in self.lines:
+            ls = len(index_list)
+            for i in range(nv):
+                vertex = self.vertices[vi+i]
+                vector_list.extend( [vertex[0], vertex[1], vertex[2],
+                                     0.0,0.0,0.0, 0.0,0.0] )
+                num_vectors += 1
+                index_list.append(len(vector_list)/8-1) # 8 floats per vector
+                pass
+            self.opengl_surface["lines"].append((ls,len(index_list)))
             pass
 
         if num_vectors > 65530:
@@ -64,18 +78,27 @@ class c_opengl_obj(c_obj):
         
         self.opengl_surface["vectors"] = vectors
         self.opengl_surface["indices"] = indices
-
         pass
     #f draw_opengl_surface
-    def draw_opengl_surface(self, og, draw=True):
+    def draw_opengl_surface(self, og, draw=True, **kwargs):
         self.opengl_surface["vectors"].bind()
         self.opengl_surface["indices"].bind()
 
-        og.shader_set_attributes( t=8, v=0, n=3, uv=6 )
+        og.shader_set_attributes( t=8, v=0, n=3, uv=6, **kwargs )
         if draw:
-            glDrawElements( GL_TRIANGLES,
-                            len(self.opengl_surface["indices"]),
-                            GL_UNSIGNED_SHORT, None) 
+            (fs,fe) = self.opengl_surface["faces"]
+            if fe>fs:
+                glDrawElements( GL_TRIANGLES,
+                                fe-fs,
+                                GL_UNSIGNED_SHORT, None) 
+                pass
+            from ctypes import sizeof, c_void_p, c_ushort
+            ushort_size = sizeof(c_ushort)
+            for (ls,le) in self.opengl_surface["lines"]:
+                glDrawElements( GL_LINE_STRIP,
+                                le-ls,
+                                GL_UNSIGNED_SHORT, c_void_p(ls*ushort_size)) 
+                pass
             pass
         self.opengl_surface["vectors"].unbind()
         self.opengl_surface["indices"].unbind()
